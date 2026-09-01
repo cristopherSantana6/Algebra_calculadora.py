@@ -34,6 +34,12 @@ class VentanaProceso:
             style="PageTitle.TLabel",
         ).pack(anchor="w")
 
+        ttk.Label(
+            contenedor,
+            text="Operaciones y resultados mostrados con fracciones exactas.",
+            style="CardSubtitle.TLabel",
+        ).pack(anchor="w", pady=(3, 0))
+
         self.progreso = ttk.Label(
             contenedor,
             text="",

@@ -17,6 +17,7 @@ from interfaces.componentes.tarjeta import Tarjeta
 from interfaces.ventana_proceso import VentanaProceso
 from modelos.sistema_ecuaciones import SistemaEcuaciones
 from utilidades.formato import formatear_numero, formatear_matriz_lineas
+from utilidades.fracciones import leer_fraccion
 
 
 class CalculadoraAlgebraLineal:
@@ -180,6 +181,12 @@ class CalculadoraAlgebraLineal:
         self.marco_entries = ttk.Frame(self.tarjeta_matriz, style="Card.TFrame")
         self.marco_entries.pack(fill="both", expand=True, pady=(15, 0))
 
+        ttk.Label(
+            self.tarjeta_matriz,
+            text="Puede ingresar enteros, decimales o fracciones (ej.: 3/4, -5/2).",
+            style="CardSubtitle.TLabel",
+        ).pack(anchor="w", pady=(8, 0))
+
         botones = ttk.Frame(self.tarjeta_matriz, style="Card.TFrame")
         botones.pack(fill="x", pady=(14, 0))
         ttk.Button(botones, text="Resolver Sistema", style="Accent.TButton", command=self.resolver).pack(side="left", fill="x", expand=True, padx=(0, 6))
@@ -321,14 +328,14 @@ class CalculadoraAlgebraLineal:
             for fila_entries in self.matriz_entries:
                 fila = []
                 for entrada in fila_entries:
-                    texto = entrada.get().strip().replace(",", ".")
-                    if texto == "":
-                        raise ValueError
-                    fila.append(float(texto))
+                    fila.append(leer_fraccion(entrada.get()))
                 matriz.append(fila)
             return matriz
-        except ValueError:
-            messagebox.showerror("Entrada inválida", "Todos los espacios deben contener números válidos.")
+        except ValueError as error:
+            messagebox.showerror(
+                "Entrada inválida",
+                f"{error}\n\nEjemplos válidos: 2, -3, 1/2, -5/8 o 0.25.",
+            )
             return None
 
     def resolver(self):

@@ -1,16 +1,22 @@
 """Algoritmos de eliminación por filas para el Programa 1.
 
+El cálculo se realiza con Fraction de la biblioteca estándar de Python,
+por lo que los resultados racionales se conservan de forma exacta.
 No se utilizan NumPy, SciPy ni funciones de álgebra lineal.
-Todo el procedimiento se realiza con listas, ciclos, condicionales
- y funciones de Python estándar.
 """
 
-EPSILON = 1e-10
+from fractions import Fraction
+
+from utilidades.fracciones import formatear_fraccion
+from utilidades.formato import formatear_operacion_eliminacion
+
+
+ZERO = Fraction(0, 1)
 
 
 def es_cero(valor):
-    """Determina si un valor puede considerarse cero."""
-    return abs(valor) < EPSILON
+    """Determina si un valor es exactamente cero."""
+    return valor == ZERO
 
 
 def copiar_matriz(matriz):
@@ -22,11 +28,11 @@ def intercambiar_filas(matriz, fila_a, fila_b):
 
 
 def limpiar_ceros(matriz, numero_variables):
-    """Elimina residuos de coma flotante muy pequeños."""
+    """Normaliza representaciones de cero."""
     for i in range(len(matriz)):
         for j in range(numero_variables + 1):
             if es_cero(matriz[i][j]):
-                matriz[i][j] = 0.0
+                matriz[i][j] = ZERO
 
 
 def eliminacion_gaussiana(matriz, numero_variables):
@@ -55,7 +61,10 @@ def eliminacion_gaussiana(matriz, numero_variables):
         if es_cero(matriz_trabajo[fila_mejor][columna]):
             pasos.append({
                 "titulo": f"Columna {columna + 1} sin pivote",
-                "operacion": f"No se encontró pivote distinto de cero en la columna {columna + 1}; se continúa.",
+                "operacion": (
+                    f"No se encontró pivote distinto de cero en la columna {columna + 1}; "
+                    "se continúa."
+                ),
                 "matriz": copiar_matriz(matriz_trabajo),
             })
             continue
@@ -75,7 +84,7 @@ def eliminacion_gaussiana(matriz, numero_variables):
         limpiar_ceros(matriz_trabajo, numero_variables)
         pasos.append({
             "titulo": "Normalización del pivote",
-            "operacion": f"R{fila_pivote + 1} ← R{fila_pivote + 1} / {pivote:g}",
+            "operacion": f"R{fila_pivote + 1} ← R{fila_pivote + 1} / ({formatear_fraccion(pivote)})",
             "matriz": copiar_matriz(matriz_trabajo),
         })
 
@@ -90,7 +99,11 @@ def eliminacion_gaussiana(matriz, numero_variables):
             limpiar_ceros(matriz_trabajo, numero_variables)
             pasos.append({
                 "titulo": "Eliminación debajo del pivote",
-                "operacion": f"R{fila + 1} ← R{fila + 1} - ({factor:g})R{fila_pivote + 1}",
+                "operacion": formatear_operacion_eliminacion(
+                    fila + 1,
+                    fila_pivote + 1,
+                    factor,
+                ),
                 "matriz": copiar_matriz(matriz_trabajo),
             })
 
@@ -99,13 +112,20 @@ def eliminacion_gaussiana(matriz, numero_variables):
 
     limpiar_ceros(matriz_trabajo, numero_variables)
 
-    return matriz_trabajo, pivotes, detectar_inconsistencia(matriz_trabajo, numero_variables), pasos
+    return (
+        matriz_trabajo,
+        pivotes,
+        detectar_inconsistencia(matriz_trabajo, numero_variables),
+        pasos,
+    )
 
 
 def detectar_inconsistencia(matriz, numero_variables):
     """Detecta una fila 0 ... 0 | c, con c distinto de cero."""
     for fila in matriz:
-        coeficientes_cero = all(es_cero(fila[j]) for j in range(numero_variables))
+        coeficientes_cero = all(
+            es_cero(fila[j]) for j in range(numero_variables)
+        )
         if coeficientes_cero and not es_cero(fila[numero_variables]):
             return True
     return False
@@ -129,8 +149,8 @@ def obtener_clasificacion(matriz_escalonada, numero_variables, pivotes, inconsis
 
 
 def resolver_solucion_unica(matriz_escalonada, numero_variables, pivotes):
-    """Resuelve por sustitución regresiva cuando existe solución única."""
-    solucion = [0.0] * numero_variables
+    """Resuelve por sustitución regresiva usando aritmética racional exacta."""
+    solucion = [ZERO] * numero_variables
 
     for fila_pivote, columna_pivote in reversed(pivotes):
         valor = matriz_escalonada[fila_pivote][numero_variables]
@@ -147,9 +167,9 @@ def resolver_solucion_unica(matriz_escalonada, numero_variables, pivotes):
 def verificar_solucion(matriz_original, solucion):
     """Comprueba la solución sustituyéndola en el sistema original."""
     for fila in matriz_original:
-        suma = 0.0
+        suma = ZERO
         for i, valor in enumerate(solucion):
             suma += fila[i] * valor
-        if abs(suma - fila[-1]) > 1e-7:
+        if suma != fila[-1]:
             return False
     return True

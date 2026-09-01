@@ -1,21 +1,28 @@
 """Funciones auxiliares de presentación."""
 
-from algoritmos.eliminacion_gaussiana import es_cero
+from utilidades.fracciones import formatear_fraccion, formatear_factor
 
 
 def formatear_numero(valor):
-    if es_cero(valor):
-        valor = 0.0
-    if abs(valor - round(valor)) < 1e-10:
-        return str(int(round(valor)))
-    return f"{valor:.4f}".rstrip("0").rstrip(".")
+    """Muestra un valor racional como entero o fracción."""
+    return formatear_fraccion(valor)
 
 
 def formatear_operacion(valor):
-    return f"{valor:g}"
+    """Muestra un factor de operación como fracción."""
+    return formatear_factor(valor)
+
+
+def formatear_operacion_eliminacion(fila, fila_pivote, factor):
+    """Genera una operación de fila legible usando fracciones."""
+    factor_texto = formatear_factor(abs(factor))
+    if factor > 0:
+        return f"R{fila} ← R{fila} - ({factor_texto})R{fila_pivote}"
+    return f"R{fila} ← R{fila} + ({factor_texto})R{fila_pivote}"
 
 
 def formatear_matriz_lineas(matriz, numero_variables):
+    """Convierte una matriz aumentada en líneas legibles."""
     lineas = []
     for fila in matriz:
         izquierda = "  ".join(
