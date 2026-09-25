@@ -16,6 +16,19 @@ Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz d
   - resta;
   - multiplicación por escalar.
 - Evaluación de combinación lineal mediante el sistema equivalente Vc=b.
+- Análisis de dependencia e independencia lineal de los vectores, incluyendo una relación no trivial cuando existe.
+- Producto matriz–vector A·v con validación de dimensiones.
+- Módulo de las 8 propiedades algebraicas solicitadas:
+  1. A + B = B + A
+  2. (A + B) + C = A + (B + C)
+  3. A + 0 = A
+  4. r(A + B) = rA + rB
+  5. (r + s)A = rA + sA
+  6. r(sA) = (rs)A
+  7. A(u + v) = Au + Av
+  8. A(cu) = c(Au)
+- El selector de propiedades permite cambiar de una propiedad a otra conservando las mismas matrices y vectores cargados.
+- El resultado muestra ambos lados de la igualdad y las dependencias de dimensiones/componentes requeridas.
 - Operaciones matriciales:
   - suma y resta con validación de dimensiones;
   - multiplicación por escalar;
@@ -61,6 +74,18 @@ python -m pruebas.casos_prueba
 
 Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, operaciones matriciales, dimensiones incompatibles y fracciones exactas.
 
+
+### Funciones añadidas para el I Corte
+
+- Módulo **A·v Matriz por Vector**:
+  - calcula directamente A·v;
+  - verifica paso a paso la propiedad distributiva A(u+v)=Au+Av;
+  - expresa A·v como combinación lineal de las columnas de A usando los componentes de v como escalares.
+- Botón **Ver Ax = b** en la entrada de sistemas:
+  - separa automáticamente la matriz aumentada [A|b];
+  - muestra la matriz de coeficientes A, el vector incógnita x y el vector de términos independientes b.
+- Estas funciones permiten trabajar directamente los tres apartados del examen del I Corte sin usar bibliotecas externas.
+
 ## Mejoras de interfaz
 
 - El texto de las ventanas de proceso ya no utiliza una franja blanca debajo del título.
@@ -69,3 +94,5 @@ Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, operacion
 - Se incorporaron seis paletas de colores y una opción de combinación personalizada mediante selector de color.
 - La selección de tema se guarda en `tema_interfaz.json` y se conserva al volver a abrir el programa.
 - La sección activa de la barra lateral queda resaltada visualmente.
+- Los vectores generadores se muestran con subíndices matemáticos (v₁, v₂, v₃, …).
+- La eliminación de Gauss/Gauss-Jordan normaliza internamente los datos a `Fraction` para conservar exactitud también cuando el usuario introduce enteros.

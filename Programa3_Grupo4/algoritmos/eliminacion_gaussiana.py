@@ -37,7 +37,7 @@ def limpiar_ceros(matriz, numero_variables):
 
 def eliminacion_gaussiana(matriz, numero_variables):
     """Reduce la matriz aumentada a forma escalonada y guarda cada paso."""
-    matriz_trabajo = copiar_matriz(matriz)
+    matriz_trabajo = [[Fraction(valor) for valor in fila] for fila in matriz]
     filas = len(matriz_trabajo)
     fila_pivote = 0
     pivotes = []
@@ -118,6 +118,87 @@ def eliminacion_gaussiana(matriz, numero_variables):
         detectar_inconsistencia(matriz_trabajo, numero_variables),
         pasos,
     )
+
+
+def formatear_operacion_division(fila, divisor):
+    """Formato de división de fila como se escribe en papel."""
+    return f"R{fila} ÷ ({formatear_fraccion(divisor)}) → R{fila}"
+
+
+def gauss_jordan(matriz, numero_variables):
+    """Reduce una matriz aumentada hasta forma escalonada reducida (Gauss-Jordan).
+
+    Se guarda cada operación elemental para mostrarla paso a paso.
+    La aritmética usa Fraction para conservar resultados exactos.
+    """
+    matriz_trabajo = [[Fraction(valor) for valor in fila] for fila in matriz]
+    filas = len(matriz_trabajo)
+    fila_pivote = 0
+    pivotes = []
+    pasos = [{
+        "titulo": "Matriz inicial",
+        "operacion": "Inicio del proceso de Gauss-Jordan.",
+        "matriz": copiar_matriz(matriz_trabajo),
+    }]
+
+    for columna in range(numero_variables):
+        if fila_pivote >= filas:
+            break
+
+        fila_mejor = fila_pivote
+        for fila in range(fila_pivote + 1, filas):
+            if abs(matriz_trabajo[fila][columna]) > abs(matriz_trabajo[fila_mejor][columna]):
+                fila_mejor = fila
+
+        if es_cero(matriz_trabajo[fila_mejor][columna]):
+            pasos.append({
+                "titulo": f"Columna {columna + 1} sin pivote",
+                "operacion": f"No hay pivote distinto de cero en la columna {columna + 1}; se continúa.",
+                "matriz": copiar_matriz(matriz_trabajo),
+            })
+            continue
+
+        if fila_mejor != fila_pivote:
+            intercambiar_filas(matriz_trabajo, fila_mejor, fila_pivote)
+            pasos.append({
+                "titulo": "Intercambio de filas",
+                "operacion": f"R{fila_pivote + 1} ↔ R{fila_mejor + 1}",
+                "matriz": copiar_matriz(matriz_trabajo),
+            })
+
+        pivote = matriz_trabajo[fila_pivote][columna]
+        if pivote != 1:
+            for j in range(columna, numero_variables + 1):
+                matriz_trabajo[fila_pivote][j] /= pivote
+            limpiar_ceros(matriz_trabajo, numero_variables)
+            pasos.append({
+                "titulo": "División de la fila pivote",
+                "operacion": formatear_operacion_division(fila_pivote + 1, pivote),
+                "matriz": copiar_matriz(matriz_trabajo),
+            })
+
+        # Gauss-Jordan elimina tanto debajo como encima del pivote.
+        for fila in range(filas):
+            if fila == fila_pivote:
+                continue
+            factor = matriz_trabajo[fila][columna]
+            if es_cero(factor):
+                continue
+            for j in range(columna, numero_variables + 1):
+                matriz_trabajo[fila][j] -= factor * matriz_trabajo[fila_pivote][j]
+            limpiar_ceros(matriz_trabajo, numero_variables)
+            pasos.append({
+                "titulo": "Eliminación de la columna pivote",
+                "operacion": formatear_operacion_eliminacion(fila + 1, fila_pivote + 1, factor),
+                "matriz": copiar_matriz(matriz_trabajo),
+            })
+
+        pivotes.append((fila_pivote, columna))
+        fila_pivote += 1
+
+    limpiar_ceros(matriz_trabajo, numero_variables)
+    inconsistente = detectar_inconsistencia(matriz_trabajo, numero_variables)
+    return matriz_trabajo, pivotes, inconsistente, pasos
 
 
 def detectar_inconsistencia(matriz, numero_variables):

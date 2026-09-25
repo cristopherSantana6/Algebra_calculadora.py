@@ -60,3 +60,19 @@ def multiplicar_matrices(a, b):
             fila_resultado.append(suma)
         resultado.append(fila_resultado)
     return resultado
+
+
+def multiplicar_matriz_vector(matriz, vector):
+    """Calcula A·v mediante productos fila-columna.
+
+    Si A es m×n, v debe tener n componentes y el resultado tiene m componentes.
+    """
+    validar_matriz(matriz)
+    if len(matriz[0]) != len(vector):
+        raise ValueError(
+            "No se puede calcular A·v: las columnas de A deben coincidir con la dimensión del vector."
+        )
+    return [
+        sum((matriz[i][j] * vector[j] for j in range(len(vector))), Fraction(0))
+        for i in range(len(matriz))
+    ]

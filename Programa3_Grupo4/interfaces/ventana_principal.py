@@ -11,6 +11,7 @@ from pathlib import Path
 
 from algoritmos.eliminacion_gaussiana import (
     eliminacion_gaussiana,
+    gauss_jordan,
     obtener_clasificacion,
     resolver_solucion_unica,
     verificar_solucion,
@@ -18,10 +19,12 @@ from algoritmos.eliminacion_gaussiana import (
 from algoritmos.matrices import (
     multiplicar_matrices,
     multiplicar_matriz_escalar,
+    multiplicar_matriz_vector,
     restar_matrices,
     sumar_matrices,
 )
 from algoritmos.vectores import (
+    analizar_dependencia_lineal,
     es_combinacion_lineal,
     multiplicar_escalar,
     restar_vectores,
@@ -119,14 +122,30 @@ class CalculadoraAlgebraLineal:
         self.filas_b = tk.IntVar(value=2)
         self.columnas_b = tk.IntVar(value=2)
         self.operacion_matriz = tk.StringVar(value="Suma (A + B)")
+        self.propiedad_seleccionada = tk.StringVar(value="1. Conmutatividad: A + B = B + A")
+        self.filas_propiedad = tk.IntVar(value=2)
+        self.columnas_propiedad = tk.IntVar(value=2)
         self.escalar = tk.StringVar(value="2")
+        self.escalar_r = tk.StringVar(value="2")
+        self.escalar_s = tk.StringVar(value="3")
+        self.escalar_c = tk.StringVar(value="2")
         self.vector_entries = []
         self.vector_b_entries = []
         self.generador_entries = []
         self.matriz_a_entries = []
         self.matriz_b_entries = []
         self.matriz_entries = []
+        self.matriz_mv_entries = []
+        self.vector_u_mv_entries = []
+        self.vector_v_mv_entries = []
+        self.prop_a_entries = []
+        self.prop_b_entries = []
+        self.prop_c_entries = []
+        self.prop_u_entries = []
+        self.prop_v_entries = []
         self.ultimo_resultado = None
+        self.filas_mv = tk.IntVar(value=3)
+        self.columnas_mv = tk.IntVar(value=3)
         self.vista_actual = "entrada"
         self.tema_actual = "Océano"
         self.botones_sidebar = {}
@@ -397,6 +416,8 @@ class CalculadoraAlgebraLineal:
         self.construir_vista_resultados()
         self.construir_vista_vectores()
         self.construir_vista_matrices()
+        self.construir_vista_matriz_vector()
+        self.construir_vista_propiedades()
         self.mostrar_vista("entrada")
 
         ttk.Label(
@@ -421,6 +442,10 @@ class CalculadoraAlgebraLineal:
         self.boton_proceso.pack(fill="x", pady=3)
         self.botones_sidebar["proceso"] = self.boton_proceso
 
+        self.boton_jordan = ttk.Button(self.sidebar, text="≡   Proceso Gauss-Jordan", style="Sidebar.TButton", command=self.abrir_proceso_jordan)
+        self.boton_jordan.pack(fill="x", pady=3)
+        self.botones_sidebar["jordan"] = self.boton_jordan
+
         self.boton_vectores = ttk.Button(
             self.sidebar, text="→   Operaciones de Vectores", style="Sidebar.TButton",
             command=lambda: self.mostrar_vista("vectores")
@@ -434,6 +459,20 @@ class CalculadoraAlgebraLineal:
         )
         self.boton_matrices.pack(fill="x", pady=3)
         self.botones_sidebar["matrices"] = self.boton_matrices
+
+        self.boton_matriz_vector = ttk.Button(
+            self.sidebar, text="A·v   Matriz por Vector", style="Sidebar.TButton",
+            command=lambda: self.mostrar_vista("matriz_vector")
+        )
+        self.boton_matriz_vector.pack(fill="x", pady=3)
+        self.botones_sidebar["matriz_vector"] = self.boton_matriz_vector
+
+        self.boton_propiedades = ttk.Button(
+            self.sidebar, text="∷   Propiedades y Dependencias", style="Sidebar.TButton",
+            command=lambda: self.mostrar_vista("propiedades")
+        )
+        self.boton_propiedades.pack(fill="x", pady=3)
+        self.botones_sidebar["propiedades"] = self.boton_propiedades
 
         self.boton_resultados = ttk.Button(self.sidebar, text="✓   Análisis de Resultados", style="Sidebar.TButton", command=lambda: self.mostrar_vista("resultados"))
         self.boton_resultados.pack(fill="x", pady=3)
@@ -500,8 +539,10 @@ class CalculadoraAlgebraLineal:
 
         botones = ttk.Frame(self.tarjeta_matriz, style="Card.TFrame")
         botones.pack(fill="x", pady=(14, 0))
-        ttk.Button(botones, text="Resolver Sistema", style="Accent.TButton", command=self.resolver).pack(side="left", fill="x", expand=True, padx=(0, 6))
-        ttk.Button(botones, text="Limpiar", style="Coral.TButton", command=self.limpiar).pack(side="right", fill="x", expand=True, padx=(6, 0))
+        ttk.Button(botones, text="Resolver con Gauss", style="Accent.TButton", command=self.resolver).pack(side="left", fill="x", expand=True, padx=(0, 4))
+        ttk.Button(botones, text="Gauss-Jordan", style="Accent.TButton", command=self.resolver_jordan).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Button(botones, text="Ver Ax = b", style="Accent.TButton", command=self.mostrar_forma_matricial).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Button(botones, text="Limpiar", style="Coral.TButton", command=self.limpiar).pack(side="right", fill="x", expand=True, padx=(4, 0))
 
         self.tarjeta_resumen = Tarjeta(derecha, "Análisis y Proceso", "El resultado se organiza para que sea fácil de interpretar.")
         self.tarjeta_resumen.pack(fill="both", expand=True)
@@ -622,6 +663,10 @@ class CalculadoraAlgebraLineal:
             derecha, text="Evaluar combinación lineal", style="Accent.TButton",
             command=self.evaluar_combinacion
         ).pack(anchor="w", pady=(14, 0))
+        ttk.Button(
+            derecha, text="Analizar dependencia lineal", style="Coral.TButton",
+            command=self.evaluar_dependencia_lineal
+        ).pack(anchor="w", pady=(8, 0))
         self.generar_vectores()
 
     def generar_vectores(self):
@@ -643,11 +688,11 @@ class CalculadoraAlgebraLineal:
 
         ttk.Label(self.marco_vectores, text="Vectores generadores", style="SectionTitle.TLabel").grid(row=0, column=0, columnspan=n+1, sticky="w", pady=(0, 8))
         for j in range(n):
-            ttk.Label(self.marco_vectores, text=f"v{j+1}" if j < k else "", style="CardSubtitle.TLabel").grid(row=1, column=j+1, padx=4)
+            ttk.Label(self.marco_vectores, text=self.subindice("v", j+1) if j < k else "", style="CardSubtitle.TLabel").grid(row=1, column=j+1, padx=4)
 
         # Cada columna representa un vector v_j y cada fila una componente.
         for j in range(k):
-            ttk.Label(self.marco_vectores, text=f"v{j+1}", style="CardSubtitle.TLabel").grid(row=j+2, column=0, sticky="w")
+            ttk.Label(self.marco_vectores, text=self.subindice("v", j+1), style="CardSubtitle.TLabel").grid(row=j+2, column=0, sticky="w")
             fila = []
             for i in range(n):
                 e = ttk.Entry(self.marco_vectores, width=7, justify="center")
@@ -694,6 +739,62 @@ class CalculadoraAlgebraLineal:
     def formatear_vector(self, vector):
         """Convierte un vector a una representación legible de sus componentes."""
         return "( " + ",  ".join(formatear_numero(x) for x in vector) + " )"
+
+    @staticmethod
+    def subindice(letra, numero):
+        """Devuelve etiquetas matemáticas como v₁, v₂, v₃ en lugar de v1, v2, v3."""
+        mapa = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        return f"{letra}{str(numero).translate(mapa)}"
+
+    def formatear_vector_columna(self, vector):
+        """Presenta un vector como columna para acercarlo a la notación matemática."""
+        return "[\n" + "\n".join(f"  {formatear_numero(x):>6}" for x in vector) + "\n]"
+
+    def evaluar_dependencia_lineal(self):
+        """Analiza si los vectores generadores son linealmente independientes."""
+        try:
+            vectores = []
+            for entradas in self.generador_entries:
+                vector = self.leer_vector_entries(entradas)
+                if vector is None:
+                    return
+                vectores.append(vector)
+            resultado = analizar_dependencia_lineal(vectores)
+        except ValueError as error:
+            messagebox.showerror("Datos inválidos", str(error))
+            return
+
+        cantidad = resultado["cantidad"]
+        dimension = resultado["dimension"]
+        if resultado["independiente"]:
+            texto = (
+                "✓ Los vectores son linealmente independientes.\n\n"
+                f"Cantidad de vectores: {cantidad}\n"
+                f"Dimensión de Rⁿ: {dimension}\n"
+                f"Rango: {resultado['rango']}\n\n"
+                "La única combinación que produce el vector cero es la combinación trivial "
+                "(todos los coeficientes son 0)."
+            )
+        else:
+            relacion = resultado.get("relacion")
+            if relacion is not None:
+                partes = []
+                for i, coef in enumerate(relacion):
+                    if coef != 0:
+                        partes.append(f"({formatear_numero(coef)}){self.subindice('v', i+1)}")
+                relacion_texto = " + ".join(partes) + " = 0"
+            else:
+                relacion_texto = "Existe una relación no trivial entre los vectores."
+            texto = (
+                "⚠ Los vectores son linealmente dependientes.\n\n"
+                f"Cantidad de vectores: {cantidad}\n"
+                f"Dimensión de Rⁿ: {dimension}\n"
+                f"Rango: {resultado['rango']}\n\n"
+                f"Relación no trivial encontrada: {relacion_texto}\n\n"
+                "Dependencia dimensional: si hay más vectores que la dimensión del espacio, "
+                "el conjunto necesariamente es dependiente."
+            )
+        self.mostrar_resultado_vector(texto)
 
     def operar_vector(self, operacion):
         """Ejecuta la operación vectorial seleccionada aplicando la definición componente a componente."""
@@ -863,6 +964,439 @@ class CalculadoraAlgebraLineal:
         lineas.extend(formatear_matriz_lineas(resultado, len(resultado[0])))
         self.mostrar_resultado_matriz("\n".join(lineas))
 
+    def construir_vista_matriz_vector(self):
+        """Módulo directo para productos A·v y la distributividad A(u+v)=Au+Av.
+
+        Este módulo cubre directamente los ejercicios del examen que requieren
+        producto matriz-vector y la interpretación del resultado como
+        combinación lineal de las columnas de A.
+        """
+        self.vista_matriz_vector = self.nueva_vista()
+        self.vista_matriz_vector.columnconfigure(0, weight=1)
+        self.vista_matriz_vector.columnconfigure(1, weight=1)
+        self.vista_matriz_vector.rowconfigure(0, weight=1)
+
+        izquierda = Tarjeta(
+            self.vista_matriz_vector,
+            "Producto matriz · vector",
+            "Ingrese A y dos vectores. El vector v se usa para A·v; u y v permiten verificar la distributividad."
+        )
+        izquierda.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+
+        derecha = Tarjeta(
+            self.vista_matriz_vector,
+            "Resultado del examen",
+            "Muestra el cálculo, la igualdad distributiva y la combinación lineal de las columnas."
+        )
+        derecha.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+
+        config = ttk.Frame(izquierda, style="Card.TFrame")
+        config.pack(fill="x", pady=(16, 8))
+        ttk.Label(config, text="Filas de A (m)", style="CardSubtitle.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(config, text="Columnas de A (n)", style="CardSubtitle.TLabel").grid(row=0, column=2, sticky="w", padx=(20, 0))
+        ttk.Spinbox(config, from_=1, to=8, textvariable=self.filas_mv, width=6).grid(row=1, column=0, pady=5, sticky="w")
+        ttk.Spinbox(config, from_=1, to=8, textvariable=self.columnas_mv, width=6).grid(row=1, column=2, padx=(20, 0), pady=5, sticky="w")
+        ttk.Button(config, text="Generar", style="Accent.TButton", command=self.generar_matriz_vector).grid(row=1, column=4, padx=(20, 0))
+
+        self.marco_matriz_vector = ttk.Frame(izquierda, style="Card.TFrame")
+        self.marco_matriz_vector.pack(fill="both", expand=True, pady=(8, 0))
+
+        botones = ttk.Frame(izquierda, style="Card.TFrame")
+        botones.pack(fill="x", pady=(12, 0))
+        ttk.Button(
+            botones, text="Calcular A·v", style="Accent.TButton",
+            command=self.calcular_matriz_vector
+        ).pack(side="left", fill="x", expand=True, padx=(0, 4))
+        ttk.Button(
+            botones, text="Verificar A(u+v)", style="Accent.TButton",
+            command=self.verificar_distributividad_mv
+        ).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Button(
+            botones, text="Limpiar", style="Coral.TButton",
+            command=self.generar_matriz_vector
+        ).pack(side="right", fill="x", expand=True, padx=(4, 0))
+
+        self.marco_resultado_matriz_vector = ttk.Frame(derecha, style="Card.TFrame")
+        self.marco_resultado_matriz_vector.pack(fill="both", expand=True, pady=(16, 0))
+        self.generar_matriz_vector()
+
+    def crear_entradas_vector_mv(self, contenedor, titulo, n):
+        marco = ttk.Frame(contenedor, style="Card.TFrame")
+        marco.pack(fill="x", pady=(5, 7))
+        ttk.Label(marco, text=titulo, style="SectionTitle.TLabel").grid(row=0, column=0, sticky="w")
+        entradas = []
+        for j in range(n):
+            e = ttk.Entry(marco, width=7, justify="center")
+            e.insert(0, "0")
+            e.grid(row=1, column=j, padx=3, pady=5)
+            entradas.append(e)
+        return entradas
+
+    def generar_matriz_vector(self):
+        """Genera A, u y v respetando que A sea m×n y cada vector tenga n componentes."""
+        try:
+            m = int(self.filas_mv.get())
+            n = int(self.columnas_mv.get())
+            if not 1 <= m <= 8 or not 1 <= n <= 8:
+                raise ValueError
+        except (ValueError, tk.TclError):
+            messagebox.showerror("Datos inválidos", "Use dimensiones entre 1 y 8.")
+            return
+
+        for widget in self.marco_matriz_vector.winfo_children():
+            widget.destroy()
+
+        ttk.Label(
+            self.marco_matriz_vector,
+            text=f"Matriz A ({m}×{n})",
+            style="SectionTitle.TLabel"
+        ).pack(anchor="w", pady=(0, 4))
+
+        marco_a = ttk.Frame(self.marco_matriz_vector, style="Card.TFrame")
+        marco_a.pack(fill="x", pady=(0, 7))
+        self.matriz_mv_entries = []
+        for i in range(m):
+            fila = []
+            for j in range(n):
+                e = ttk.Entry(marco_a, width=7, justify="center")
+                e.insert(0, "0")
+                e.grid(row=i, column=j, padx=3, pady=3)
+                fila.append(e)
+            self.matriz_mv_entries.append(fila)
+
+        self.vector_u_mv_entries = self.crear_entradas_vector_mv(
+            self.marco_matriz_vector, "Vector u", n
+        )
+        self.vector_v_mv_entries = self.crear_entradas_vector_mv(
+            self.marco_matriz_vector, "Vector v", n
+        )
+
+        self.preparar_navegacion(
+            self.matriz_mv_entries + [self.vector_u_mv_entries, self.vector_v_mv_entries]
+        )
+        self.mostrar_resultado_matriz_vector(
+            "Complete A, u y v.\n\n"
+            "• «Calcular A·v» resuelve el producto y muestra la combinación lineal.\n"
+            "• «Verificar A(u+v)» comprueba A(u+v)=Au+Av."
+        )
+
+    def leer_matriz_vector_entries(self):
+        try:
+            matriz = [
+                [leer_fraccion(e.get()) for e in fila]
+                for fila in self.matriz_mv_entries
+            ]
+            u = [leer_fraccion(e.get()) for e in self.vector_u_mv_entries]
+            v = [leer_fraccion(e.get()) for e in self.vector_v_mv_entries]
+            return matriz, u, v
+        except ValueError as error:
+            messagebox.showerror("Entrada inválida", str(error))
+            return None
+
+    def mostrar_resultado_matriz_vector(self, texto):
+        for widget in self.marco_resultado_matriz_vector.winfo_children():
+            widget.destroy()
+        caja = tk.Text(
+            self.marco_resultado_matriz_vector,
+            font=("Consolas", 10),
+            bg=self.SURFACE_ALT,
+            fg=self.DARK,
+            relief="flat",
+            state="normal",
+            wrap="word"
+        )
+        caja.insert("1.0", texto)
+        caja.config(state="disabled")
+        caja.pack(fill="both", expand=True)
+        self.text_widgets.append(caja)
+
+    def _formatear_vector_columna_bonito(self, vector):
+        return "[ " + "\n  ".join(formatear_numero(x) for x in vector) + " ]"
+
+    def _formatear_matriz_normal_mv(self, matriz):
+        return "\n".join(formatear_matriz_lineas(matriz, len(matriz[0])))
+
+    def calcular_matriz_vector(self):
+        datos = self.leer_matriz_vector_entries()
+        if datos is None:
+            return
+        matriz, u, v = datos
+        try:
+            resultado = multiplicar_matriz_vector(matriz, v)
+        except ValueError as error:
+            messagebox.showerror("Dimensiones incompatibles", str(error))
+            return
+
+        partes = []
+        for j, coef in enumerate(v):
+            columna = [fila[j] for fila in matriz]
+            partes.append(
+                f"({formatear_numero(coef)})·C{j + 1} = "
+                f"({formatear_numero(coef)}){self._formatear_vector_columna_bonito(columna)}"
+            )
+
+        combinacion = " + ".join(
+            f"({formatear_numero(coef)})C{j + 1}"
+            for j, coef in enumerate(v)
+        )
+
+        texto = (
+            "PRODUCTO MATRIZ · VECTOR\n\n"
+            f"A =\n{self._formatear_matriz_normal_mv(matriz)}\n\n"
+            f"v = {self._formatear_vector_columna_bonito(v)}\n\n"
+            f"A·v = {self._formatear_vector_columna_bonito(resultado)}\n\n"
+            "COMBINACIÓN LINEAL DE LAS COLUMNAS\n"
+            f"A·v = {combinacion}\n\n"
+            + "\n".join(partes)
+            + "\n\n"
+            f"Por tanto, A·v = {combinacion} = {self._formatear_vector_columna_bonito(resultado)}."
+        )
+        self.mostrar_resultado_matriz_vector(texto)
+
+    def verificar_distributividad_mv(self):
+        datos = self.leer_matriz_vector_entries()
+        if datos is None:
+            return
+        matriz, u, v = datos
+        try:
+            suma = sumar_vectores(u, v)
+            izquierda = multiplicar_matriz_vector(matriz, suma)
+            au = multiplicar_matriz_vector(matriz, u)
+            av = multiplicar_matriz_vector(matriz, v)
+            derecha = sumar_vectores(au, av)
+        except ValueError as error:
+            messagebox.showerror("Dimensiones incompatibles", str(error))
+            return
+
+        cumple = izquierda == derecha
+        texto = (
+            "VERIFICACIÓN DE LA PROPIEDAD DISTRIBUTIVA\n\n"
+            "A(u + v) = Au + Av\n\n"
+            f"1) u + v = {self._formatear_vector_columna_bonito(suma)}\n\n"
+            f"2) A(u + v) = {self._formatear_vector_columna_bonito(izquierda)}\n\n"
+            f"3) Au = {self._formatear_vector_columna_bonito(au)}\n"
+            f"   Av = {self._formatear_vector_columna_bonito(av)}\n\n"
+            f"4) Au + Av = {self._formatear_vector_columna_bonito(derecha)}\n\n"
+            + ("✓ Se cumple: A(u + v) = Au + Av."
+               if cumple else "✗ No coincide. Revise los datos.")
+        )
+        self.mostrar_resultado_matriz_vector(texto)
+
+    def construir_vista_propiedades(self):
+        """Construye el módulo para verificar las 8 propiedades solicitadas."""
+        self.vista_propiedades = self.nueva_vista()
+        self.vista_propiedades.columnconfigure(0, weight=3)
+        self.vista_propiedades.columnconfigure(1, weight=2)
+        self.vista_propiedades.rowconfigure(1, weight=1)
+
+        izquierda = Tarjeta(
+            self.vista_propiedades,
+            "Propiedades de matrices y producto matriz–vector",
+            "Las mismas matrices y vectores permanecen cargados al cambiar de propiedad."
+        )
+        izquierda.grid(row=0, column=0, rowspan=2, sticky="nsew", padx=(0, 10))
+        derecha = Tarjeta(
+            self.vista_propiedades,
+            "Resultado y dependencias",
+            "Se comprueba la igualdad y se explican las condiciones de dimensiones y componentes."
+        )
+        derecha.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=(10, 0))
+
+        config = ttk.Frame(izquierda, style="Card.TFrame")
+        config.pack(fill="x", pady=(16, 8))
+        ttk.Label(config, text="Filas m", style="CardSubtitle.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(config, text="Columnas n", style="CardSubtitle.TLabel").grid(row=0, column=2, sticky="w", padx=(15, 0))
+        ttk.Spinbox(config, from_=1, to=8, textvariable=self.filas_propiedad, width=5).grid(row=1, column=0, sticky="w")
+        ttk.Spinbox(config, from_=1, to=8, textvariable=self.columnas_propiedad, width=5).grid(row=1, column=2, sticky="w", padx=(15, 0))
+        ttk.Button(config, text="Generar datos", style="Accent.TButton", command=self.generar_propiedades).grid(row=1, column=4, padx=(18, 0))
+
+        ttk.Label(config, text="Propiedad a verificar", style="CardSubtitle.TLabel").grid(row=2, column=0, sticky="w", pady=(10, 0))
+        propiedades = [
+            "1. Conmutatividad: A + B = B + A",
+            "2. Asociatividad: (A + B) + C = A + (B + C)",
+            "3. Identidad aditiva: A + 0 = A",
+            "4. Distributiva: r(A + B) = rA + rB",
+            "5. Distributiva de escalares: (r + s)A = rA + sA",
+            "6. Asociatividad escalar: r(sA) = (rs)A",
+            "7. Producto matriz–vector: A(u + v) = Au + Av",
+            "8. Homogeneidad matriz–vector: A(cu) = c(Au)",
+        ]
+        combo = ttk.Combobox(config, textvariable=self.propiedad_seleccionada, values=propiedades, state="readonly", width=58)
+        combo.grid(row=3, column=0, columnspan=5, sticky="ew", pady=4)
+        ttk.Button(config, text="Resolver propiedad", style="Accent.TButton", command=self.operar_propiedad).grid(row=3, column=5, padx=(8, 0))
+
+        self.marco_propiedades = ttk.Frame(izquierda, style="Card.TFrame")
+        self.marco_propiedades.pack(fill="both", expand=True, pady=(8, 0))
+        self.marco_resultado_propiedad = ttk.Frame(derecha, style="Card.TFrame")
+        self.marco_resultado_propiedad.pack(fill="both", expand=True, pady=(16, 0))
+        self.generar_propiedades()
+
+    def crear_entradas_propiedad_matriz(self, contenedor, filas, columnas, titulo):
+        marco = ttk.Frame(contenedor, style="Card.TFrame")
+        marco.pack(side="left", padx=(0, 10), pady=5, anchor="n")
+        ttk.Label(marco, text=titulo, style="SectionTitle.TLabel").grid(row=0, column=0, columnspan=columnas, sticky="w", pady=(0, 5))
+        entradas = []
+        for i in range(filas):
+            fila = []
+            for j in range(columnas):
+                e = ttk.Entry(marco, width=6, justify="center")
+                e.insert(0, "0")
+                e.grid(row=i+1, column=j, padx=2, pady=2)
+                fila.append(e)
+            entradas.append(fila)
+        return entradas
+
+    def crear_entradas_propiedad_vector(self, contenedor, dimension, titulo):
+        marco = ttk.Frame(contenedor, style="Card.TFrame")
+        marco.pack(side="left", padx=(0, 10), pady=5, anchor="n")
+        ttk.Label(marco, text=titulo, style="SectionTitle.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 5))
+        entradas = []
+        for i in range(dimension):
+            e = ttk.Entry(marco, width=6, justify="center")
+            e.insert(0, "0")
+            e.grid(row=i+1, column=0, padx=2, pady=2)
+            entradas.append(e)
+        return entradas
+
+    def generar_propiedades(self):
+        try:
+            m, n = int(self.filas_propiedad.get()), int(self.columnas_propiedad.get())
+            if not (1 <= m <= 8 and 1 <= n <= 8):
+                raise ValueError
+        except (ValueError, tk.TclError):
+            messagebox.showerror("Datos inválidos", "Las dimensiones deben estar entre 1 y 8.")
+            return
+        for widget in self.marco_propiedades.winfo_children():
+            widget.destroy()
+
+        fila_superior = ttk.Frame(self.marco_propiedades, style="Card.TFrame")
+        fila_superior.pack(fill="x", pady=(4, 8))
+        self.prop_a_entries = self.crear_entradas_propiedad_matriz(fila_superior, m, n, "Matriz A")
+        self.prop_b_entries = self.crear_entradas_propiedad_matriz(fila_superior, m, n, "Matriz B")
+        self.prop_c_entries = self.crear_entradas_propiedad_matriz(fila_superior, m, n, "Matriz C")
+
+        fila_inferior = ttk.Frame(self.marco_propiedades, style="Card.TFrame")
+        fila_inferior.pack(fill="x", pady=(5, 8))
+        self.prop_u_entries = self.crear_entradas_propiedad_vector(fila_inferior, n, "Vector u")
+        self.prop_v_entries = self.crear_entradas_propiedad_vector(fila_inferior, n, "Vector v")
+
+        escalares = ttk.Frame(fila_inferior, style="Card.TFrame")
+        escalares.pack(side="left", padx=(8, 0), pady=5, anchor="n")
+        for fila, texto, variable in [(0, "r", self.escalar_r), (1, "s", self.escalar_s), (2, "c", self.escalar_c)]:
+            ttk.Label(escalares, text=texto, style="CardSubtitle.TLabel").grid(row=fila, column=0, padx=(0, 5), pady=2)
+            ttk.Entry(escalares, textvariable=variable, width=7, justify="center").grid(row=fila, column=1, pady=2)
+
+        ttk.Label(
+            self.marco_propiedades,
+            text=f"Condición base: A, B y C son {m}×{n}; u y v pertenecen a Rⁿ ({n} componentes). Para A·u, las {n} columnas de A deben coincidir con la dimensión del vector.",
+            style="CardSubtitle.TLabel", wraplength=720
+        ).pack(anchor="w", pady=(6, 0))
+        self.preparar_navegacion(self.prop_a_entries + self.prop_b_entries + self.prop_c_entries + [self.prop_u_entries, self.prop_v_entries])
+        self.mostrar_resultado_propiedad("Seleccione una propiedad y presione «Resolver propiedad».")
+
+    def leer_prop_matriz(self, entries):
+        try:
+            return [[leer_fraccion(e.get()) for e in fila] for fila in entries]
+        except ValueError as error:
+            messagebox.showerror("Entrada inválida", str(error))
+            return None
+
+    def leer_prop_vector(self, entries):
+        try:
+            return [leer_fraccion(e.get()) for e in entries]
+        except ValueError as error:
+            messagebox.showerror("Entrada inválida", str(error))
+            return None
+
+    def mostrar_resultado_propiedad(self, texto):
+        for widget in self.marco_resultado_propiedad.winfo_children():
+            widget.destroy()
+        caja = tk.Text(self.marco_resultado_propiedad, font=("Consolas", 10), bg=self.SURFACE_ALT, fg=self.DARK, relief="flat", state="normal", wrap="word")
+        caja.insert("1.0", texto)
+        caja.config(state="disabled")
+        caja.pack(fill="both", expand=True, pady=(8, 0))
+        self.text_widgets.append(caja)
+
+    def formatear_lado_propiedad(self, valor, es_vector=False):
+        if es_vector:
+            return self.formatear_vector_columna(valor)
+        return "\n".join(formatear_matriz_lineas(valor, len(valor[0])))
+
+    def operar_propiedad(self):
+        A = self.leer_prop_matriz(self.prop_a_entries)
+        B = self.leer_prop_matriz(self.prop_b_entries)
+        C = self.leer_prop_matriz(self.prop_c_entries)
+        u = self.leer_prop_vector(self.prop_u_entries)
+        v = self.leer_prop_vector(self.prop_v_entries)
+        if any(x is None for x in (A, B, C, u, v)):
+            return
+        try:
+            nombre = self.propiedad_seleccionada.get()
+            r = leer_fraccion(self.escalar_r.get())
+            s = leer_fraccion(self.escalar_s.get())
+            c = leer_fraccion(self.escalar_c.get())
+
+            if nombre.startswith("1."):
+                izquierda = sumar_matrices(A, B)
+                derecha = sumar_matrices(B, A)
+                titulo = "Propiedad 1 — Conmutatividad de la suma"
+                detalle = "A + B = B + A"
+                dep = "A y B deben tener exactamente las mismas dimensiones. Cada componente aᵢⱼ se suma con bᵢⱼ."
+            elif nombre.startswith("2."):
+                izquierda = sumar_matrices(sumar_matrices(A, B), C)
+                derecha = sumar_matrices(A, sumar_matrices(B, C))
+                titulo = "Propiedad 2 — Asociatividad de la suma"
+                detalle = "(A + B) + C = A + (B + C)"
+                dep = "A, B y C deben tener las mismas filas y columnas. La agrupación cambia, pero cada componente final conserva la misma suma."
+            elif nombre.startswith("3."):
+                cero = [[0 for _ in range(len(A[0]))] for _ in range(len(A))]
+                izquierda = sumar_matrices(A, cero)
+                derecha = A
+                titulo = "Propiedad 3 — Identidad aditiva"
+                detalle = "A + 0 = A"
+                dep = "La matriz cero debe tener exactamente las mismas dimensiones que A; todos sus componentes son 0."
+            elif nombre.startswith("4."):
+                izquierda = multiplicar_matriz_escalar(sumar_matrices(A, B), r)
+                derecha = sumar_matrices(multiplicar_matriz_escalar(A, r), multiplicar_matriz_escalar(B, r))
+                titulo = "Propiedad 4 — Distributividad del escalar"
+                detalle = "r(A + B) = rA + rB"
+                dep = "A y B deben compartir dimensiones. r es un escalar y multiplica cada componente sin cambiar las dimensiones."
+            elif nombre.startswith("5."):
+                izquierda = multiplicar_matriz_escalar(A, r + s)
+                derecha = sumar_matrices(multiplicar_matriz_escalar(A, r), multiplicar_matriz_escalar(A, s))
+                titulo = "Propiedad 5 — Distributividad respecto a escalares"
+                detalle = "(r + s)A = rA + sA"
+                dep = "r y s son escalares. A conserva su dimensión m×n en ambos lados y cada componente se calcula de forma independiente."
+            elif nombre.startswith("6."):
+                izquierda = multiplicar_matriz_escalar(multiplicar_matriz_escalar(A, s), r)
+                derecha = multiplicar_matriz_escalar(A, r * s)
+                titulo = "Propiedad 6 — Asociatividad de la multiplicación escalar"
+                detalle = "r(sA) = (rs)A"
+                dep = "r y s son escalares; el producto escalar no cambia el número de filas ni de columnas de A."
+            elif nombre.startswith("7."):
+                suma_uv = sumar_vectores(u, v)
+                izquierda = multiplicar_matriz_vector(A, suma_uv)
+                derecha = sumar_vectores(multiplicar_matriz_vector(A, u), multiplicar_matriz_vector(A, v))
+                titulo = "Propiedad 7 — Distributividad del producto matriz–vector"
+                detalle = "A(u + v) = Au + Av"
+                dep = "u y v deben tener n componentes y A debe ser m×n. u+v pertenece a Rⁿ; Au, Av y A(u+v) pertenecen a Rᵐ."
+            else:
+                cu = multiplicar_escalar(u, c)
+                izquierda = multiplicar_matriz_vector(A, cu)
+                derecha = multiplicar_escalar(multiplicar_matriz_vector(A, u), c)
+                titulo = "Propiedad 8 — Homogeneidad del producto matriz–vector"
+                detalle = "A(cu) = c(Au)"
+                dep = "u debe tener n componentes y A debe ser m×n. El escalar c cambia los componentes de u, pero no su dimensión."
+        except ValueError as error:
+            messagebox.showerror("Dimensiones incompatibles", str(error))
+            return
+
+        es_vector = nombre.startswith(("7.", "8."))
+        cuerpo = f"{titulo}\n\n{detalle}\n\nLADO IZQUIERDO:\n{self.formatear_lado_propiedad(izquierda, es_vector)}\n\nLADO DERECHO:\n{self.formatear_lado_propiedad(derecha, es_vector)}"
+        cuerpo += "\n\n✓ Igualdad verificada." if izquierda == derecha else "\n\n✗ La igualdad no coincide; revise los datos."
+        cuerpo += f"\n\nDEPENDENCIAS DE DIMENSIÓN Y COMPONENTES\n{dep}"
+        self.mostrar_resultado_propiedad(cuerpo)
+
     def mostrar_vista(self, nombre):
         vistas = {
             "entrada": self.vista_entrada,
@@ -870,6 +1404,8 @@ class CalculadoraAlgebraLineal:
             "resultados": self.vista_resultados,
             "vectores": self.vista_vectores,
             "matrices": self.vista_matrices,
+            "matriz_vector": self.vista_matriz_vector,
+            "propiedades": self.vista_propiedades,
         }
         for vista in vistas.values():
             vista.lower()
@@ -940,6 +1476,35 @@ class CalculadoraAlgebraLineal:
             )
             return None
 
+    def mostrar_forma_matricial(self):
+        """Muestra la matriz A, el vector incógnita x y el vector b del sistema Ax=b."""
+        matriz = self.leer_matriz()
+        if matriz is None:
+            return
+
+        n = int(self.numero_variables.get())
+        if not matriz or any(len(fila) != n + 1 for fila in matriz):
+            messagebox.showerror("Datos inválidos", "Primero genere una matriz aumentada válida.")
+            return
+
+        a = [fila[:n] for fila in matriz]
+        b = [fila[n] for fila in matriz]
+        x = [f"x{i + 1}" for i in range(n)]
+
+        a_texto = "\n".join(formatear_matriz_lineas(a, n))
+        b_texto = "\n".join(f"[ {formatear_numero(valor)} ]" for valor in b)
+        x_texto = "\n".join(f"[ {nombre} ]" for nombre in x)
+
+        texto = (
+            "FORMA MATRICIAL DEL SISTEMA\n\n"
+            f"A =\n{a_texto}\n\n"
+            f"x =\n{x_texto}\n\n"
+            f"b =\n{b_texto}\n\n"
+            "Por lo tanto:\n\n"
+            "A · x = b"
+        )
+        messagebox.showinfo("Forma matricial Ax = b", texto)
+
     def resolver(self):
         matriz_original = self.leer_matriz()
         if matriz_original is None:
@@ -971,10 +1536,51 @@ class CalculadoraAlgebraLineal:
             "solucion": solucion,
             "verificacion": verificacion,
             "pasos": pasos,
+            "metodo": "Gauss",
         }
 
         self.actualizar_resumen()
         self.mostrar_vista("entrada")
+
+    def resolver_jordan(self):
+        matriz_original = self.leer_matriz()
+        if matriz_original is None:
+            return
+
+        numero_variables = int(self.numero_variables.get())
+        sistema = SistemaEcuaciones(matriz_original, numero_variables)
+        reducida, pivotes, inconsistente, pasos = gauss_jordan(
+            sistema.matriz_aumentada, sistema.numero_variables
+        )
+        clasificacion, libres = obtener_clasificacion(
+            reducida, numero_variables, pivotes, inconsistente
+        )
+
+        solucion = None
+        verificacion = None
+        if clasificacion == "unica":
+            # En Gauss-Jordan la matriz ya está reducida, por lo que la
+            # solución se lee directamente de la columna independiente.
+            solucion = [reducida[fila][numero_variables] for fila, _ in pivotes]
+            verificacion = verificar_solucion(matriz_original, solucion)
+
+        self.ultimo_resultado = {
+            "matriz_original": matriz_original,
+            "escalonada": reducida,
+            "pivotes": pivotes,
+            "inconsistente": inconsistente,
+            "clasificacion": clasificacion,
+            "variables_libres": libres,
+            "solucion": solucion,
+            "verificacion": verificacion,
+            "pasos": pasos,
+            "metodo": "Gauss-Jordan",
+        }
+
+        self.proceso_titulo.config(text="Proceso Gauss-Jordan")
+        self.actualizar_resumen()
+        self.mostrar_vista("entrada")
+
 
     def actualizar_resumen(self):
         resultado = self.ultimo_resultado
@@ -1030,13 +1636,25 @@ class CalculadoraAlgebraLineal:
 
         self.mostrar_vista("resultados")
 
+    def abrir_proceso_jordan(self):
+        if not self.ultimo_resultado:
+            messagebox.showinfo("Proceso Gauss-Jordan", "Primero resuelva el sistema con el botón «Gauss-Jordan» para mostrar el proceso paso a paso.")
+            return
+        if self.ultimo_resultado.get("metodo") != "Gauss-Jordan":
+            messagebox.showinfo("Proceso Gauss-Jordan", "El resultado actual fue obtenido con Gauss. Presione «Gauss-Jordan» para generar el proceso correspondiente.")
+            return
+        self.vista_actual = "jordan"
+        self.marcar_sidebar_activa("jordan")
+        VentanaProceso(self.root, self.ultimo_resultado["pasos"], int(self.numero_variables.get()), titulo="Proceso Gauss-Jordan • Paso a paso")
+
+
     def abrir_proceso(self):
         if not self.ultimo_resultado:
             messagebox.showinfo("Proceso Gaussiano", "Primero resuelva un sistema para poder mostrar el proceso paso a paso.")
             return
         self.vista_actual = "proceso"
         self.marcar_sidebar_activa("proceso")
-        VentanaProceso(self.root, self.ultimo_resultado["pasos"], int(self.numero_variables.get()))
+        VentanaProceso(self.root, self.ultimo_resultado["pasos"], int(self.numero_variables.get()), titulo="Proceso Gaussiano • Paso a paso")
 
     def actualizar_texto(self, widget, texto):
         widget.config(state="normal")

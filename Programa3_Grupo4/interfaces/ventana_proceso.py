@@ -9,13 +9,14 @@ from utilidades.formato import formatear_matriz_lineas
 class VentanaProceso:
     """Presenta una operación de fila a la vez."""
 
-    def __init__(self, parent, pasos, numero_variables):
+    def __init__(self, parent, pasos, numero_variables, titulo="Proceso Gaussiano • Paso a paso"):
         self.pasos = pasos
         self.numero_variables = numero_variables
         self.indice = 0
+        self.titulo_ventana = titulo
 
         self.ventana = tk.Toplevel(parent)
-        self.ventana.title("Proceso Gaussiano • Paso a paso")
+        self.ventana.title(self.titulo_ventana)
         self.ventana.geometry("800x650")
         self.ventana.minsize(680, 540)
         self.ventana.transient(parent)
@@ -30,13 +31,13 @@ class VentanaProceso:
 
         ttk.Label(
             contenedor,
-            text="Proceso de Eliminación por Filas",
+            text="Proceso de Reducción por Filas",
             style="PageTitle.TLabel",
         ).pack(anchor="w")
 
         ttk.Label(
             contenedor,
-            text="Operaciones y resultados mostrados con fracciones exactas.",
+            text="Operaciones mostradas como en papel, incluyendo divisiones de filas y fracciones exactas.",
             style="ProcessSubtitle.TLabel",
         ).pack(anchor="w", pady=(3, 0))
 
