@@ -78,15 +78,17 @@ def eliminacion_gaussiana(matriz, numero_variables):
             })
 
         pivote = matriz_trabajo[fila_pivote][columna]
-        for j in range(columna, numero_variables + 1):
-            matriz_trabajo[fila_pivote][j] /= pivote
+        # Si el pivote ya vale 1, dividir entre 1 sería un paso innecesario.
+        if pivote != 1:
+            for j in range(columna, numero_variables + 1):
+                matriz_trabajo[fila_pivote][j] /= pivote
 
-        limpiar_ceros(matriz_trabajo, numero_variables)
-        pasos.append({
-            "titulo": "Normalización del pivote",
-            "operacion": f"R{fila_pivote + 1} ← R{fila_pivote + 1} / ({formatear_fraccion(pivote)})",
-            "matriz": copiar_matriz(matriz_trabajo),
-        })
+            limpiar_ceros(matriz_trabajo, numero_variables)
+            pasos.append({
+                "titulo": "Normalización del pivote",
+                "operacion": f"R{fila_pivote + 1} ← R{fila_pivote + 1} / ({formatear_fraccion(pivote)})",
+                "matriz": copiar_matriz(matriz_trabajo),
+            })
 
         for fila in range(fila_pivote + 1, filas):
             factor = matriz_trabajo[fila][columna]
@@ -210,6 +212,12 @@ def detectar_inconsistencia(matriz, numero_variables):
         if coeficientes_cero and not es_cero(fila[numero_variables]):
             return True
     return False
+
+
+def es_homogeneo(matriz, numero_variables):
+    """Un sistema es homogéneo si todos sus términos independientes son cero;
+    si al menos uno es distinto de cero, el sistema es heterogéneo."""
+    return all(es_cero(fila[numero_variables]) for fila in matriz)
 
 
 def obtener_clasificacion(matriz_escalonada, numero_variables, pivotes, inconsistente):

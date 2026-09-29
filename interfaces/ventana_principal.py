@@ -11,6 +11,7 @@ from pathlib import Path
 
 from algoritmos.eliminacion_gaussiana import (
     eliminacion_gaussiana,
+    es_homogeneo,
     gauss_jordan,
     obtener_clasificacion,
     resolver_solucion_unica,
@@ -1069,6 +1070,32 @@ class CalculadoraAlgebraLineal:
         mapa = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
         return f"{letra}{str(numero).translate(mapa)}"
 
+    def nombrar_variables(self, indices, letra):
+        """Convierte índices de columna (0, 2) en nombres como «c₁, c₃»."""
+        if not indices:
+            return "ninguna"
+        return ", ".join(self.subindice(letra, j + 1) for j in indices)
+
+    def formatear_relacion(self, coeficientes, letra="v"):
+        """Escribe c₁v₁ + ... + cₖvₖ = 0 como en papel, por ejemplo v₁ − 2v₂ + v₃ = 0."""
+        texto = ""
+        for i, coef in enumerate(coeficientes):
+            if coef == 0:
+                continue
+            magnitud = abs(coef)
+            if magnitud == 1:
+                factor = ""
+            elif magnitud.denominator == 1:
+                factor = formatear_numero(magnitud)
+            else:
+                factor = f"({formatear_numero(magnitud)})"
+            termino = f"{factor}{self.subindice(letra, i + 1)}"
+            if not texto:
+                texto = f"−{termino}" if coef < 0 else termino
+            else:
+                texto += f" − {termino}" if coef < 0 else f" + {termino}"
+        return f"{texto} = 0"
+
     def formatear_vector_columna(self, vector):
         """Presenta un vector como columna para acercarlo a la notación matemática."""
         return "[\n" + "\n".join(f"  {formatear_numero(x):>6}" for x in vector) + "\n]"
@@ -1091,27 +1118,42 @@ class CalculadoraAlgebraLineal:
         dimension = resultado["dimension"]
         rango = resultado["rango"]
         libres = resultado["variables_libres"]
+        basicas = resultado["columnas_pivote"]
         matriz_homogenea = resultado["matriz"]
-        matriz_columnas = [fila[:cantidad] for fila in matriz_homogenea]
-        escalonada = resultado["escalonada"]
+        matriz_columnas = resultado["matriz_columnas"]
+        reducida = resultado["reducida"]
+        tipo_sistema = "homogéneo" if resultado["homogeneo"] else "heterogéneo"
+        texto_basicas = self.nombrar_variables(basicas, "c")
+        texto_libres = self.nombrar_variables(libres, "c")
 
         if resultado["independiente"]:
-            veredicto = "✓ L.I. — Los vectores son linealmente independientes."
+            veredicto = (
+                "✓ L.I. — Los vectores son linealmente independientes.\n"
+                f"Sistema {tipo_sistema} V·c = 0: solo tiene la solución trivial c = 0."
+            )
             positivo = True
             explicacion = (
-                f"La matriz de columnas tiene {rango} pivote(s) para "
+                f"El sistema es {tipo_sistema} porque todos sus términos "
+                "independientes son 0; por eso siempre es consistente "
+                "(c = 0 siempre es solución). "
+                f"La forma reducida tiene {rango} pivote(s) para "
                 f"{cantidad} vector(es). Como rango = cantidad de vectores, "
-                "cada variable tiene pivote y el sistema homogéneo "
+                "cada variable tiene pivote, no hay variables libres y "
                 "V·c = 0 solo admite la solución trivial."
             )
         else:
-            veredicto = "⚠ L.D. — Los vectores son linealmente dependientes."
+            veredicto = (
+                "⚠ L.D. — Los vectores son linealmente dependientes.\n"
+                f"Sistema {tipo_sistema} V·c = 0: tiene infinitas soluciones (no triviales)."
+            )
             positivo = False
             explicacion = (
-                f"La matriz de columnas tiene {rango} pivote(s) para "
+                f"El sistema es {tipo_sistema} porque todos sus términos "
+                "independientes son 0; por eso siempre es consistente. "
+                f"La forma reducida tiene {rango} pivote(s) para "
                 f"{cantidad} vector(es). Como rango < cantidad de vectores, "
-                f"existen {len(libres)} variable(s) libre(s). "
-                "Eso permite construir una solución no trivial del sistema homogéneo V·c = 0."
+                f"existen {len(libres)} variable(s) libre(s) ({texto_libres}). "
+                "Eso permite construir una solución no trivial de V·c = 0."
             )
 
         pasos = [{
@@ -1126,7 +1168,9 @@ class CalculadoraAlgebraLineal:
             "numero_variables": cantidad,
         }]
 
-        for i, paso in enumerate(resultado["pasos"], start=3):
+        # El primer paso de Gauss-Jordan es la matriz inicial, que ya se
+        # mostró como «Sistema homogéneo»; se omite para no repetirla.
+        for i, paso in enumerate(resultado["pasos"][1:], start=3):
             pasos.append({
                 "titulo": f"Paso {i} — {paso['titulo']}",
                 "descripcion": paso["operacion"],
@@ -1135,28 +1179,19 @@ class CalculadoraAlgebraLineal:
             })
 
         pasos.append({
-            "titulo": "Paso final — Conteo de pivotes y variables libres",
+            "titulo": "Paso final — Matriz escalonada reducida",
             "descripcion": (
-                f"Pivotes: {rango}. Variables libres: {len(libres)}."
+                f"Pivotes: {rango} (variables básicas: {texto_basicas}). "
+                f"Variables libres: {len(libres)} ({texto_libres})."
             ),
-            "matriz": escalonada,
+            "matriz": reducida,
             "numero_variables": cantidad,
         })
 
         if not resultado["independiente"] and resultado.get("relacion") is not None:
-            relacion = resultado["relacion"]
-            partes = []
-            for i, coef in enumerate(relacion):
-                if coef != 0:
-                    signo = "+" if coef > 0 and partes else ""
-                    partes.append(
-                        f"{signo}({formatear_numero(coef)})"
-                        f"{self.subindice('v', i + 1)}"
-                    )
-            relacion_texto = " ".join(partes) + " = 0"
             pasos.append({
                 "titulo": "Relación no trivial",
-                "ecuacion": relacion_texto,
+                "ecuacion": self.formatear_relacion(resultado["relacion"]),
                 "nota": "Como al menos un coeficiente es distinto de cero, esta relación demuestra la dependencia lineal.",
             })
 
@@ -1165,10 +1200,13 @@ class CalculadoraAlgebraLineal:
             "veredicto": veredicto,
             "positivo": positivo,
             "metricas": [
+                ("Veredicto", "L.I." if resultado["independiente"] else "L.D."),
+                ("Tipo de sistema", tipo_sistema.capitalize()),
                 ("Vectores", cantidad),
                 ("Dimensión", f"R^{dimension}"),
                 ("Pivotes", rango),
-                ("Variables libres", len(libres)),
+                ("Variables básicas", texto_basicas),
+                ("Variables libres", f"{len(libres)} ({texto_libres})"),
                 ("Criterio", "rango = vectores" if resultado["independiente"] else "rango < vectores"),
             ],
             "explicacion": explicacion,
@@ -1385,11 +1423,19 @@ class CalculadoraAlgebraLineal:
                     style="AnalysisBody.TLabel", wraplength=500
                 ).pack(anchor="w")
 
+        if resultado["homogeneo"]:
+            tipo_sistema = "Homogéneo"
+            veredicto += "\nSistema homogéneo V·c = 0 (b es el vector cero)."
+        else:
+            tipo_sistema = "Heterogéneo"
+            veredicto += "\nSistema heterogéneo V·c = b (b ≠ 0)."
+
         self.mostrar_analisis_completo({
             "tipo": "Combinación lineal",
             "veredicto": veredicto,
             "positivo": resultado["es_combinacion"],
             "metricas": [
+                ("Tipo de sistema", tipo_sistema),
                 ("Vectores generadores", k),
                 ("Dimensión", f"R^{n}"),
                 ("Clasificación", resultado["clasificacion"]),
@@ -2555,15 +2601,19 @@ class CalculadoraAlgebraLineal:
 
         numero_variables = int(self.numero_variables.get())
         clasificacion = resultado["clasificacion"]
+        homogeneo = es_homogeneo(resultado["matriz_original"], numero_variables)
+        tipo_sistema = "homogéneo (b = 0)" if homogeneo else "heterogéneo (b ≠ 0)"
 
         if clasificacion == "unica":
-            veredicto = "Sistema consistente determinado: tiene una única solución."
+            veredicto = f"Sistema {tipo_sistema} consistente determinado: tiene una única solución."
+            if homogeneo:
+                veredicto += " Es la solución trivial x = 0."
             positivo = True
         elif clasificacion == "infinita":
-            veredicto = "Sistema consistente indeterminado: tiene infinitas soluciones."
+            veredicto = f"Sistema {tipo_sistema} consistente indeterminado: tiene infinitas soluciones."
             positivo = True
         else:
-            veredicto = "Sistema inconsistente: no tiene solución."
+            veredicto = f"Sistema {tipo_sistema} inconsistente: no tiene solución."
             positivo = False
 
         pasos_visuales = []
@@ -2600,6 +2650,7 @@ class CalculadoraAlgebraLineal:
             )
 
         metricas = [
+            ("Tipo de sistema", "Homogéneo" if homogeneo else "Heterogéneo"),
             ("Método", resultado["metodo"]),
             ("Pivotes", len(pivotes)),
             ("Variables", numero_variables),

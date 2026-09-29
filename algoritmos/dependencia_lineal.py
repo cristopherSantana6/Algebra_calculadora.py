@@ -2,12 +2,13 @@
 
 Implementación con Python estándar. No utiliza NumPy, SymPy ni otras
 librerías externas. Los vectores se convierten en columnas de V y se
-estudia el sistema homogéneo Vc = 0 mediante eliminación por filas.
+estudia el sistema homogéneo Vc = 0 mediante Gauss-Jordan, hasta la
+forma escalonada reducida.
 """
 
 from fractions import Fraction
 
-from algoritmos.eliminacion_gaussiana import eliminacion_gaussiana
+from algoritmos.eliminacion_gaussiana import es_homogeneo, gauss_jordan
 
 
 def _validar_vectores(vectores):
@@ -24,8 +25,8 @@ def analizar_conjunto_vectores(vectores):
     """Evalúa un conjunto de vectores como L.I. o L.D.
 
     Retorna la matriz de columnas V, el sistema homogéneo [V|0], la
-    forma escalonada, los pivotes, las variables libres y, si corresponde,
-    una relación lineal no trivial.
+    forma escalonada reducida, los pivotes, las variables libres y, si
+    corresponde, una relación lineal no trivial.
     """
     _validar_vectores(vectores)
 
@@ -44,15 +45,11 @@ def analizar_conjunto_vectores(vectores):
         for fila in matriz_columnas
     ]
 
-    escalonada, pivotes, _, pasos = eliminacion_gaussiana(
-        matriz_homogenea, k
-    )
+    reducida, pivotes, _, pasos = gauss_jordan(matriz_homogenea, k)
 
     rango = len(pivotes)
-    variables_libres = [
-        j for j in range(k)
-        if j not in {columna for _, columna in pivotes}
-    ]
+    columnas_pivote = [columna for _, columna in pivotes]
+    variables_libres = [j for j in range(k) if j not in columnas_pivote]
     independiente = rango == k
 
     relacion = None
@@ -61,24 +58,27 @@ def analizar_conjunto_vectores(vectores):
         libre = variables_libres[0]
         relacion[libre] = Fraction(1)
 
-        # La matriz está en forma escalonada y los pivotes fueron
-        # normalizados a 1, por lo que se puede hacer sustitución regresiva.
+        # En la forma reducida cada pivote vale 1 y es el único valor no
+        # nulo de su columna, así que cada variable básica se despeja
+        # directamente en función de las variables libres.
         for fila, columna in reversed(pivotes):
             valor = Fraction(0)
             for j in range(columna + 1, k):
-                valor += escalonada[fila][j] * relacion[j]
+                valor += reducida[fila][j] * relacion[j]
             relacion[columna] = -valor
 
     return {
         "independiente": independiente,
+        "homogeneo": es_homogeneo(matriz_homogenea, k),
         "rango": rango,
         "dimension": n,
         "cantidad": k,
+        "columnas_pivote": columnas_pivote,
         "variables_libres": variables_libres,
         "relacion": relacion,
         "matriz_columnas": matriz_columnas,
         "matriz": matriz_homogenea,
-        "escalonada": escalonada,
+        "reducida": reducida,
         "pivotes": pivotes,
         "pasos": pasos,
     }

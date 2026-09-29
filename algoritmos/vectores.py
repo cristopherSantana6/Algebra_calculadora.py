@@ -5,7 +5,7 @@ No se utilizan NumPy, SciPy ni funciones avanzadas de math.
 """
 
 from fractions import Fraction
-from algoritmos.eliminacion_gaussiana import eliminacion_gaussiana, obtener_clasificacion, resolver_solucion_unica
+from algoritmos.eliminacion_gaussiana import eliminacion_gaussiana, es_homogeneo, obtener_clasificacion, resolver_solucion_unica
 from algoritmos.dependencia_lineal import analizar_conjunto_vectores
 
 
@@ -62,6 +62,7 @@ def es_combinacion_lineal(vectores, b):
 
     return {
         "es_combinacion": not inconsistente,
+        "homogeneo": es_homogeneo(matriz, k),
         "clasificacion": clasificacion,
         "coeficientes": coeficientes,
         "variables_libres": libres,

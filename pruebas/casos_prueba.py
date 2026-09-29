@@ -4,6 +4,7 @@ from fractions import Fraction
 
 from algoritmos.eliminacion_gaussiana import (
     eliminacion_gaussiana,
+    es_homogeneo,
     gauss_jordan,
     obtener_clasificacion,
     resolver_solucion_unica,
@@ -78,7 +79,37 @@ def ejecutar_casos():
     assert independientes["independiente"]
     assert not dependientes["independiente"]
     assert dependientes["relacion"] == [Fraction(-2), Fraction(1)]
+    assert independientes["homogeneo"] and dependientes["homogeneo"]
     print("✓ Dependencia lineal: conjuntos independientes y dependientes correctos")
+
+    # La salida debe ser la forma escalonada REDUCIDA, con pivotes y libres identificados.
+    tres = analizar_dependencia_lineal([
+        [Fraction(1), Fraction(2), Fraction(3)],
+        [Fraction(4), Fraction(5), Fraction(6)],
+        [Fraction(7), Fraction(8), Fraction(9)],
+    ])
+    assert not tres["independiente"] and tres["rango"] == 2
+    assert tres["columnas_pivote"] == [0, 1] and tres["variables_libres"] == [2]
+    assert tres["reducida"] == [
+        [1, 0, -1, 0],
+        [0, 1, 2, 0],
+        [0, 0, 0, 0],
+    ]
+    assert tres["relacion"] == [Fraction(1), Fraction(-2), Fraction(1)]
+    print("✓ Dependencia lineal: forma reducida, pivotes y variables libres correctos")
+
+    # Homogéneo vs heterogéneo.
+    assert es_homogeneo([[Fraction(1), Fraction(2), Fraction(0)]], 2)
+    assert not es_homogeneo([[Fraction(1), Fraction(2), Fraction(5)]], 2)
+    assert not es_combinacion_lineal(generadores, combinado)["homogeneo"]
+    print("✓ Clasificación homogéneo / heterogéneo correcta")
+
+    # Gauss no debe mostrar el paso innecesario «R ← R / (1)».
+    _, _, _, pasos_uno = eliminacion_gaussiana(
+        [[Fraction(1), Fraction(2), Fraction(3)], [Fraction(0), Fraction(1), Fraction(1)]], 2
+    )
+    assert not any("/ (1)" in paso["operacion"] for paso in pasos_uno)
+    print("✓ Gauss: no divide filas cuyo pivote ya vale 1")
 
     # Matrices.
     A = [[Fraction(1), Fraction(2)], [Fraction(3), Fraction(4)]]
