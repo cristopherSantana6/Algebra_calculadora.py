@@ -62,6 +62,14 @@ def multiplicar_matrices(a, b):
     return resultado
 
 
+def trasponer_matriz(a):
+    """Calcula Aᵀ: la entrada (i, j) de A pasa a la posición (j, i).
+    Si A es m×n, Aᵀ es n×m (cada fila de A se convierte en una columna)."""
+    validar_matriz(a)
+    filas, columnas = len(a), len(a[0])
+    return [[a[i][j] for i in range(filas)] for j in range(columnas)]
+
+
 def multiplicar_matriz_vector(matriz, vector):
     """Calcula A·v mediante productos fila-columna.
 

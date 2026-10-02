@@ -16,6 +16,7 @@ from algoritmos.matrices import (
     multiplicar_matriz_escalar,
     restar_matrices,
     sumar_matrices,
+    trasponer_matriz,
 )
 from algoritmos.vectores import (
     analizar_dependencia_lineal,
@@ -129,6 +130,19 @@ def ejecutar_casos():
     except ValueError:
         pass
     print("✓ Matrices: suma, resta, escalar y multiplicación correctas")
+
+    # Traspuesta: una matriz 2×3 pasa a ser 3×2 y (AB)ᵀ = BᵀAᵀ.
+    A_t = [[Fraction(1), Fraction(2), Fraction(3)], [Fraction(4), Fraction(5), Fraction(6)]]
+    B_t = [[Fraction(7), Fraction(8)], [Fraction(9), Fraction(10)], [Fraction(11), Fraction(12)]]
+    assert trasponer_matriz(A_t) == [[1, 4], [2, 5], [3, 6]]
+    assert trasponer_matriz(trasponer_matriz(A_t)) == A_t
+    producto_t = multiplicar_matrices(A_t, B_t)
+    assert producto_t == [[58, 64], [139, 154]]
+    assert trasponer_matriz(producto_t) == [[58, 139], [64, 154]]
+    assert trasponer_matriz(producto_t) == multiplicar_matrices(
+        trasponer_matriz(B_t), trasponer_matriz(A_t)
+    )
+    print("✓ Traspuesta: Aᵀ, (Aᵀ)ᵀ = A y (AB)ᵀ = BᵀAᵀ correctas")
     print("✓ Matrices: validación de dimensiones incompatibles correcta")
 
     # Fracciones exactas.

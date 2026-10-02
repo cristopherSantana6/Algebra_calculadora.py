@@ -23,6 +23,7 @@ from algoritmos.matrices import (
     multiplicar_matriz_vector,
     restar_matrices,
     sumar_matrices,
+    trasponer_matriz,
 )
 from algoritmos.vectores import (
     analizar_dependencia_lineal,
@@ -147,6 +148,11 @@ class CalculadoraAlgebraLineal:
         self.prop_v_entries = []
         self.ultimo_resultado = None
         self.ultimo_analisis = None
+        # Modo calculadora en Matrices: último resultado y qué representa cada matriz.
+        self.ultimo_resultado_matriz = None
+        self.ultima_expresion = None
+        self.expresion_a = "A"
+        self.expresion_b = "B"
         self.filas_mv = tk.IntVar(value=3)
         self.columnas_mv = tk.IntVar(value=3)
         self.vista_actual = "entrada"
@@ -941,7 +947,10 @@ class CalculadoraAlgebraLineal:
                     wraplength=650,
                 ).pack(anchor="w", pady=(4, 2))
 
-        self.mostrar_vista("resultados")
+        # Los módulos que ya muestran su procedimiento en su propio panel
+        # pasan ir_a_resultados=False para que el usuario no pierda la vista.
+        if ir_a_resultados:
+            self.mostrar_vista("resultados")
 
     def construir_vista_vectores(self):
         """Construye la vista de operaciones en R^n reutilizando el estilo visual existente."""
@@ -1473,8 +1482,11 @@ class CalculadoraAlgebraLineal:
             ttk.Spinbox(config, from_=1, to=8, textvariable=var, width=5).grid(row=1, column=col, padx=3, pady=4)
 
         ttk.Label(config, text="Operación", style="CardSubtitle.TLabel").grid(row=2, column=0, pady=(8, 0), sticky="w")
-        opciones = ["Suma (A + B)", "Resta (A - B)", "Escalar (cA)", "Multiplicación (A · B)"]
-        ttk.Combobox(config, textvariable=self.operacion_matriz, values=opciones, state="readonly", width=23).grid(row=3, column=0, columnspan=5, sticky="w", pady=4)
+        opciones = [
+            "Suma (A + B)", "Resta (A - B)", "Escalar (cA)", "Multiplicación (A · B)",
+            "Traspuesta (Aᵀ)", "Traspuesta del producto (A · B)ᵀ",
+        ]
+        ttk.Combobox(config, textvariable=self.operacion_matriz, values=opciones, state="readonly", width=32).grid(row=3, column=0, columnspan=5, sticky="w", pady=4)
         ttk.Button(config, text="Generar matrices", style="Accent.TButton", command=self.generar_matrices).grid(row=3, column=6, padx=5)
 
         self.marco_matrices = ttk.Frame(izquierda, style="Card.TFrame")
@@ -1482,6 +1494,13 @@ class CalculadoraAlgebraLineal:
         self.marco_resultado_matriz = ttk.Frame(derecha, style="Card.TFrame")
         self.marco_resultado_matriz.pack(fill="both", expand=True, pady=(16, 0))
         ttk.Button(derecha, text="Calcular operación", style="Accent.TButton", command=self.operar_matriz).pack(anchor="w", pady=(14, 0))
+
+        # Botones para encadenar operaciones como en una calculadora.
+        acumular = ttk.Frame(derecha, style="Card.TFrame")
+        acumular.pack(fill="x", pady=(8, 0))
+        ttk.Button(acumular, text="Usar resultado como A", style="Accent.TButton", command=lambda: self.usar_resultado_como("A")).pack(side="left", padx=(0, 4))
+        ttk.Button(acumular, text="Usar resultado como B", style="Accent.TButton", command=lambda: self.usar_resultado_como("B")).pack(side="left", padx=4)
+        ttk.Button(acumular, text="Reiniciar expresión", style="Coral.TButton", command=self.reiniciar_expresion_matrices).pack(side="left", padx=(4, 0))
         self.generar_matrices()
 
     def crear_entradas_matriz(self, contenedor, filas, columnas, titulo):
@@ -1500,8 +1519,12 @@ class CalculadoraAlgebraLineal:
             entradas.append(fila)
         return entradas
 
-    def generar_matrices(self):
-        """Regenera las matrices A y B de acuerdo con sus dimensiones seleccionadas."""
+    def generar_matrices(self, conservar_expresion=False):
+        """Regenera las matrices A y B de acuerdo con sus dimensiones seleccionadas.
+
+        Al generar datos nuevos, A y B vuelven a llamarse «A» y «B». Cuando se
+        carga un resultado (modo calculadora) se conserva lo que representa cada una.
+        """
         try:
             fa, ca = int(self.filas_a.get()), int(self.columnas_a.get())
             fb, cb = int(self.filas_b.get()), int(self.columnas_b.get())
@@ -1510,12 +1533,18 @@ class CalculadoraAlgebraLineal:
         except (ValueError, tk.TclError):
             messagebox.showerror("Datos inválidos", "Use dimensiones entre 1 y 8.")
             return
+        if not conservar_expresion:
+            self.expresion_a = "A"
+            self.expresion_b = "B"
         for widget in self.marco_matrices.winfo_children():
             widget.destroy()
-        self.matriz_a_entries = self.crear_entradas_matriz(self.marco_matrices, fa, ca, "Matriz A")
-        self.matriz_b_entries = self.crear_entradas_matriz(self.marco_matrices, fb, cb, "Matriz B")
+        titulo_a = "Matriz A" if self.expresion_a == "A" else f"Matriz A = {self.expresion_a}"
+        titulo_b = "Matriz B" if self.expresion_b == "B" else f"Matriz B = {self.expresion_b}"
+        self.matriz_a_entries = self.crear_entradas_matriz(self.marco_matrices, fa, ca, titulo_a)
+        self.matriz_b_entries = self.crear_entradas_matriz(self.marco_matrices, fb, cb, titulo_b)
         self.preparar_navegacion(self.matriz_a_entries + self.matriz_b_entries)
         ttk.Label(self.marco_matrices, text="Para cA, el escalar se toma del campo de operación.", style="CardSubtitle.TLabel").pack(anchor="w", pady=5)
+        ttk.Label(self.marco_matrices, text="Para Aᵀ solo se usa la matriz A; B se ignora.", style="CardSubtitle.TLabel").pack(anchor="w")
         self.mostrar_resultado_matriz("Genere las matrices, complete sus entradas y calcule.")
 
     def leer_matriz_entries(self, entries):
@@ -1544,8 +1573,30 @@ class CalculadoraAlgebraLineal:
             return
 
         op = self.operacion_matriz.get()
+        producto = None
+        comprobacion = None
         try:
-            if op == "Suma (A + B)":
+            if op == "Traspuesta (Aᵀ)":
+                resultado = trasponer_matriz(a)
+                titulo = "Traspuesta de una matriz"
+                formula = "Aᵀ"
+                explicacion = (
+                    "La traspuesta convierte cada fila de A en una columna: la entrada "
+                    "(i, j) pasa a la posición (j, i). Si A es m×n, Aᵀ es n×m."
+                )
+            elif op == "Traspuesta del producto (A · B)ᵀ":
+                producto = multiplicar_matrices(a, b)
+                resultado = trasponer_matriz(producto)
+                # Se comprueba la propiedad (AB)ᵀ = BᵀAᵀ calculando el lado derecho aparte.
+                comprobacion = multiplicar_matrices(trasponer_matriz(b), trasponer_matriz(a))
+                titulo = "Traspuesta del producto"
+                formula = "(A · B)ᵀ"
+                explicacion = (
+                    "Primero se calcula A·B (las columnas de A deben coincidir con las "
+                    "filas de B) y luego se traspone el resultado. Se cumple la propiedad "
+                    "(A·B)ᵀ = BᵀAᵀ: el orden de los factores se invierte."
+                )
+            elif op == "Suma (A + B)":
                 resultado = sumar_matrices(a, b)
                 titulo = "Suma de matrices"
                 formula = "A + B"
@@ -1573,6 +1624,25 @@ class CalculadoraAlgebraLineal:
             messagebox.showerror("Dimensiones incompatibles", str(error))
             return
 
+        # Expresión acumulada: dice qué representa el resultado en función
+        # de los datos originales, por ejemplo «(A·B)ᵀ + B».
+        ea = self._envolver(self.expresion_a)
+        eb = self._envolver(self.expresion_b)
+        if op == "Traspuesta (Aᵀ)":
+            expresion = f"{ea}ᵀ"
+        elif op == "Traspuesta del producto (A · B)ᵀ":
+            expresion = f"({ea}·{eb})ᵀ"
+        elif op == "Suma (A + B)":
+            expresion = f"{ea} + {eb}"
+        elif op == "Resta (A - B)":
+            expresion = f"{ea} − {eb}"
+        elif op == "Escalar (cA)":
+            expresion = f"({formatear_numero(c)}){ea}"
+        else:
+            expresion = f"{ea}·{eb}"
+        self.ultimo_resultado_matriz = resultado
+        self.ultima_expresion = expresion
+
         for widget in self.marco_resultado_matriz.winfo_children():
             widget.destroy()
         interior = self._crear_area_desplazable(self.marco_resultado_matriz)
@@ -1582,35 +1652,50 @@ class CalculadoraAlgebraLineal:
         )
         fila = ttk.Frame(datos, style="Card.TFrame")
         fila.pack(fill="x", pady=6)
+        usa_b = op not in ("Escalar (cA)", "Traspuesta (Aᵀ)")
         crear_matriz_visual(
             fila, a, len(a[0])
         ).pack(side="left", padx=(0, 18))
-        if op != "Escalar (cA)":
+        if usa_b:
             crear_matriz_visual(
                 fila, b, len(b[0])
             ).pack(side="left")
 
         paso = self._agregar_seccion_analisis(
-            interior, "Paso 1 — Aplicar la operación", formula
+            interior, "Paso 1 — Aplicar la operación",
+            "Primero se calcula A · B" if producto is not None else formula
         )
 
         if op == "Multiplicación (A · B)":
-            filas_a = len(a)
-            columnas_a = len(a[0])
-            columnas_b = len(b[0])
-            for i in range(filas_a):
-                for j in range(columnas_b):
-                    terminos = " + ".join(
-                        f"({formatear_numero(a[i][k])})({formatear_numero(b[k][j])})"
-                        for k in range(columnas_a)
-                    )
-                    valor = resultado[i][j]
-                    ttk.Label(
-                        paso,
-                        text=f"c{i+1},{j+1} = {terminos} = {formatear_numero(valor)}",
-                        style="AnalysisBody.TLabel",
-                        wraplength=650,
-                    ).pack(anchor="w", pady=2)
+            self._mostrar_pasos_producto(paso, a, b, resultado)
+        elif op == "Traspuesta (Aᵀ)":
+            self._mostrar_pasos_traspuesta(paso, a, "A", "Aᵀ")
+        elif producto is not None:
+            self._mostrar_pasos_producto(paso, a, b, producto)
+            crear_matriz_visual(
+                paso, producto, len(producto[0])
+            ).pack(anchor="center", pady=6)
+
+            paso2 = self._agregar_seccion_analisis(
+                interior, "Paso 2 — Trasponer el producto",
+                "Cada fila de A·B se convierte en una columna de (A·B)ᵀ."
+            )
+            self._mostrar_pasos_traspuesta(paso2, producto, "A·B", "(A·B)ᵀ")
+
+            coincide = comprobacion == resultado
+            comp = self._agregar_seccion_analisis(
+                interior, "Comprobación — (A·B)ᵀ = BᵀAᵀ",
+                "Se calcula BᵀAᵀ por separado; observe que el orden de A y B se invierte."
+            )
+            crear_matriz_visual(
+                comp, comprobacion, len(comprobacion[0])
+            ).pack(anchor="center", pady=6)
+            ttk.Label(
+                comp,
+                text="✓ BᵀAᵀ coincide con (A·B)ᵀ." if coincide else "✗ BᵀAᵀ no coincide con (A·B)ᵀ.",
+                style="Status.TLabel" if coincide else "StatusBad.TLabel",
+                padding=8,
+            ).pack(anchor="w", pady=(4, 0))
         else:
             for i in range(len(resultado)):
                 ttk.Label(
@@ -1623,27 +1708,123 @@ class CalculadoraAlgebraLineal:
                 ).pack(anchor="w", pady=2)
 
         final = self._agregar_seccion_analisis(
-            interior, "Paso final — Resultado"
+            interior, f"Paso final — Resultado = {expresion}",
+            "Puede seguir operando con «Usar resultado como A» o «como B»."
         )
         crear_matriz_visual(
             final, resultado, len(resultado[0])
         ).pack(anchor="center", pady=6)
 
+        metricas = [("Expresión", expresion), ("Dimensión A", f"{len(a)}×{len(a[0])}")]
+        if usa_b:
+            metricas.append(("Dimensión B", f"{len(b)}×{len(b[0])}"))
+        if producto is not None:
+            metricas.append(("Dimensión A·B", f"{len(producto)}×{len(producto[0])}"))
+        metricas.append(("Dimensión resultado", f"{len(resultado)}×{len(resultado[0])}"))
+        if comprobacion is not None:
+            metricas.append(("(A·B)ᵀ = BᵀAᵀ", "Verificada" if comprobacion == resultado else "No coincide"))
+
+        pasos_visuales = [{"titulo": "Datos de entrada", "matriz": a, "numero_variables": len(a[0])}]
+        if producto is not None:
+            pasos_visuales.append({"titulo": "Producto A·B", "matriz": producto, "numero_variables": len(producto[0])})
+        pasos_visuales.append({"titulo": "Resultado", "matriz": resultado, "numero_variables": len(resultado[0])})
+
         self.mostrar_analisis_completo({
             "tipo": titulo,
-            "veredicto": f"Resultado {formula} calculado correctamente.",
+            "veredicto": f"Resultado {expresion} calculado correctamente.",
             "positivo": True,
-            "metricas": [
-                ("Dimensión A", f"{len(a)}×{len(a[0])}"),
-                ("Dimensión B", f"{len(b)}×{len(b[0])}"),
-                ("Dimensión resultado", f"{len(resultado)}×{len(resultado[0])}"),
-            ],
+            "metricas": metricas,
             "explicacion": explicacion,
-            "pasos_visuales": [
-                {"titulo": "Datos de entrada", "matriz": a, "numero_variables": len(a[0])},
-                {"titulo": "Resultado", "matriz": resultado, "numero_variables": len(resultado[0])},
-            ],
+            "pasos_visuales": pasos_visuales,
         }, ir_a_resultados=False)
+
+    @staticmethod
+    def _envolver(expresion):
+        """Pone paréntesis a una expresión compuesta para poder seguir operándola."""
+        return expresion if expresion in ("A", "B") else f"({expresion})"
+
+    def usar_resultado_como(self, destino):
+        """Copia el último resultado en A o B para encadenar otra operación."""
+        if self.ultimo_resultado_matriz is None:
+            messagebox.showinfo(
+                "Sin resultado",
+                "Primero calcule una operación; luego podrá usar su resultado como A o B."
+            )
+            return
+
+        resultado = self.ultimo_resultado_matriz
+        # Se guarda lo escrito en ambas matrices para no perder la que no cambia.
+        texto_a = [[e.get() for e in fila] for fila in self.matriz_a_entries]
+        texto_b = [[e.get() for e in fila] for fila in self.matriz_b_entries]
+        texto_resultado = [[formatear_numero(x) for x in fila] for fila in resultado]
+
+        # El resultado puede tener otra dimensión (p. ej. Aᵀ de 2×3 pasa a 3×2).
+        if destino == "A":
+            self.filas_a.set(len(resultado))
+            self.columnas_a.set(len(resultado[0]))
+            self.expresion_a = self.ultima_expresion
+            texto_a = texto_resultado
+        else:
+            self.filas_b.set(len(resultado))
+            self.columnas_b.set(len(resultado[0]))
+            self.expresion_b = self.ultima_expresion
+            texto_b = texto_resultado
+
+        self.generar_matrices(conservar_expresion=True)
+        self._rellenar_matrices(texto_a, texto_b)
+
+        self.mostrar_resultado_matriz(
+            f"Resultado cargado en {destino}:  {destino} = {self.ultima_expresion}\n\n"
+            "Elija la siguiente operación y presione «Calcular operación»."
+        )
+
+    def _rellenar_matrices(self, texto_a, texto_b):
+        """Escribe los valores dados en las casillas de A y B."""
+        for entradas, valores in ((self.matriz_a_entries, texto_a), (self.matriz_b_entries, texto_b)):
+            for fila_entradas, fila_valores in zip(entradas, valores):
+                for entrada, valor in zip(fila_entradas, fila_valores):
+                    entrada.delete(0, "end")
+                    entrada.insert(0, valor)
+
+    def reiniciar_expresion_matrices(self):
+        """Vuelve a llamar «A» y «B» a las matrices sin borrar sus valores."""
+        texto_a = [[e.get() for e in fila] for fila in self.matriz_a_entries]
+        texto_b = [[e.get() for e in fila] for fila in self.matriz_b_entries]
+        self.ultimo_resultado_matriz = None
+        self.ultima_expresion = None
+        self.generar_matrices()
+        self._rellenar_matrices(texto_a, texto_b)
+
+    def _mostrar_pasos_producto(self, parent, a, b, producto):
+        """Muestra cada entrada cᵢⱼ de A·B como fila de A por columna de B."""
+        for i in range(len(a)):
+            for j in range(len(b[0])):
+                terminos = " + ".join(
+                    f"({formatear_numero(a[i][k])})({formatear_numero(b[k][j])})"
+                    for k in range(len(a[0]))
+                )
+                ttk.Label(
+                    parent,
+                    text=f"c{i+1},{j+1} = {terminos} = {formatear_numero(producto[i][j])}",
+                    style="AnalysisBody.TLabel",
+                    wraplength=650,
+                ).pack(anchor="w", pady=2)
+
+    def _mostrar_pasos_traspuesta(self, parent, matriz, nombre, nombre_traspuesta):
+        """Explica la traspuesta fila por fila: la fila i pasa a ser la columna i."""
+        for i, fila in enumerate(matriz):
+            valores = ", ".join(formatear_numero(x) for x in fila)
+            ttk.Label(
+                parent,
+                text=f"Fila {i+1} de {nombre}: ({valores})  →  columna {i+1} de {nombre_traspuesta}",
+                style="AnalysisBody.TLabel",
+                wraplength=650,
+            ).pack(anchor="w", pady=2)
+        ttk.Label(
+            parent,
+            text=f"Dimensión: {len(matriz)}×{len(matriz[0])}  →  {len(matriz[0])}×{len(matriz)}",
+            style="Operation.TLabel",
+        ).pack(anchor="w", pady=(6, 2))
 
     def construir_vista_matriz_vector(self):
         """Módulo directo para productos A·v y la distributividad A(u+v)=Au+Av.
@@ -2014,7 +2195,8 @@ class CalculadoraAlgebraLineal:
         }, ir_a_resultados=False)
 
     def construir_vista_propiedades(self):
-        """Construye el módulo para verificar las 8 propiedades solicitadas."""
+        """Construye el módulo para verificar las 8 propiedades solicitadas,
+        más un contraejemplo (A·B = B·A) donde la igualdad puede fallar."""
         self.vista_propiedades = self.nueva_vista()
         self.vista_propiedades.columnconfigure(0, weight=3)
         self.vista_propiedades.columnconfigure(1, weight=2)
@@ -2051,6 +2233,7 @@ class CalculadoraAlgebraLineal:
             "6. Asociatividad escalar: r(sA) = (rs)A",
             "7. Producto matriz–vector: A(u + v) = Au + Av",
             "8. Homogeneidad matriz–vector: A(cu) = c(Au)",
+            "9. ¿Conmutatividad del producto?: A · B = B · A",
         ]
         combo = ttk.Combobox(config, textvariable=self.propiedad_seleccionada, values=propiedades, state="readonly", width=58)
         combo.grid(row=3, column=0, columnspan=5, sticky="ew", pady=4)
@@ -2183,16 +2366,10 @@ class CalculadoraAlgebraLineal:
             padding=10
         ).pack(anchor="w", pady=(8, 8))
 
-        dep = self._agregar_seccion_analisis(
+        self._agregar_seccion_analisis(
             interior, "Dependencias de dimensión y componentes",
             datos["dependencias"]
         )
-        ttk.Label(
-            dep,
-            text=datos["detalle"],
-            style="AnalysisBody.TLabel",
-            wraplength=620
-        ).pack(anchor="w", pady=(5, 0))
 
     def _mostrar_valor_visual(self, parent, valor):
         """Muestra matrices o vectores en el panel de propiedades."""
@@ -2285,7 +2462,7 @@ class CalculadoraAlgebraLineal:
                 titulo = "Propiedad 7 — Distributividad del producto matriz–vector"
                 detalle = "A(u + v) = Au + Av"
                 dep = "u y v deben tener n componentes y A debe ser m×n."
-            else:
+            elif nombre.startswith("8."):
                 cu = multiplicar_escalar(u, c)
                 izquierda = multiplicar_matriz_vector(A, cu)
                 derecha = multiplicar_escalar(
@@ -2294,6 +2471,23 @@ class CalculadoraAlgebraLineal:
                 titulo = "Propiedad 8 — Homogeneidad del producto matriz–vector"
                 detalle = "A(cu) = c(Au)"
                 dep = "u debe tener n componentes y A debe ser m×n."
+            else:
+                # A diferencia de las anteriores, esta igualdad NO es una
+                # propiedad general: sirve para mostrar un caso donde falla.
+                if len(A) != len(A[0]):
+                    raise ValueError(
+                        "A·B y B·A solo existen a la vez si A y B son cuadradas. "
+                        "Genere los datos con filas m = columnas n."
+                    )
+                izquierda = multiplicar_matrices(A, B)
+                derecha = multiplicar_matrices(B, A)
+                titulo = "Propiedad 9 — ¿Conmutatividad del producto de matrices?"
+                detalle = "A · B = B · A"
+                dep = (
+                    "A y B deben ser cuadradas (n×n) para que existan A·B y B·A. "
+                    "Aun así, en general A·B ≠ B·A: el producto de matrices NO es "
+                    "conmutativo, por lo que es normal que esta igualdad no se cumpla."
+                )
 
         except ValueError as error:
             messagebox.showerror("Dimensiones incompatibles", str(error))
