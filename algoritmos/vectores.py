@@ -1,7 +1,8 @@
-"""Operaciones algebraicas con vectores en R^n.
 
-Todas las operaciones usan listas y Fraction de la biblioteca estándar.
-No se utilizan NumPy, SciPy ni funciones avanzadas de math.
+"""Módulo para realizar operaciones algebraicas con vectores en R^n.
+Implementa contenidos de Álgebra Lineal relacionados con operaciones vectoriales.
+Utiliza listas y Fraction de la biblioteca estándar de Python.
+Elaborado por: Cristopher Rafael Santana Ríos y Blanca Alejandra Zeledón Abea
 """
 
 from fractions import Fraction
@@ -22,7 +23,9 @@ def validar_mismas_dimensiones(*vectores):
 
 
 def sumar_vectores(a, b):
-    """Calcula a+b componente a componente: (a_i+b_i) para i=1,...,n."""
+    """Suma dos vectores componente a componente.
+      Recibe los vectores A y B de igual dimensión y devuelve A + B.
+      """
     validar_mismas_dimensiones(a, b)
     return [x + y for x, y in zip(a, b)]
 
@@ -34,7 +37,10 @@ def restar_vectores(a, b):
 
 
 def multiplicar_escalar(vector, escalar):
-    """Calcula c·v componente a componente: (c v_i) para i=1,...,n."""
+    """Multiplica un vector por un escalar.
+       Recibe un vector y un número; devuelve el vector resultante c·v.
+       """
+    validar_mismas_dimensiones(vector)
     return [escalar * x for x in vector]
 
 
@@ -56,7 +62,9 @@ def es_combinacion_lineal(vectores, b):
         escalonada, k, pivotes, inconsistente
     )
 
+
     coeficientes = None
+    # Los coeficientes se calculan directamente solo cuando el sistema tiene solución única.
     if clasificacion == "unica":
         coeficientes = resolver_solucion_unica(escalonada, k, pivotes)
 
@@ -73,5 +81,6 @@ def es_combinacion_lineal(vectores, b):
 
 
 def analizar_dependencia_lineal(vectores):
-    """Compatibilidad del módulo de vectores con el análisis del Programa 4."""
+    """Analiza la dependencia lineal de un conjunto de vectores.
+    Devuelve el resultado del análisis realizado por el módulo correspondiente."""
     return analizar_conjunto_vectores(vectores)

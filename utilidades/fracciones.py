@@ -1,19 +1,18 @@
-"""Funciones para lectura y presentación exacta de números racionales."""
+
+"""
+Funciones para leer y presentar números racionales de forma exacta.
+Utiliza Fraction para representar enteros, fracciones y decimales.
+Facilita la entrada de datos y la presentación de resultados de Álgebra Lineal.
+"""
+
 
 from fractions import Fraction
 
 
 def leer_fraccion(texto):
-    """
-    Convierte una entrada escrita por el usuario a Fraction.
-
-    Se aceptan, por ejemplo:
-        2
-        -3
-        1/2
-        -5/8
-        0.25
-        1.5
+    """Convierte una entrada textual en un número racional.
+    Recibe una cadena con un entero, fracción o decimal y devuelve Fraction.
+    Genera ValueError si la entrada está vacía o no tiene un formato válido.
     """
     valor = str(texto).strip().replace(" ", "")
     if not valor:
@@ -28,7 +27,9 @@ def leer_fraccion(texto):
 
 
 def formatear_fraccion(valor):
-    """Devuelve una Fraction como entero o fracción a/b."""
+    """Representa un número racional como entero o fracción a/b.
+       Recibe un valor numérico y devuelve una cadena legible.
+       """
     fraccion = valor if isinstance(valor, Fraction) else Fraction(valor)
     if fraccion.denominator == 1:
         return str(fraccion.numerator)
@@ -36,5 +37,7 @@ def formatear_fraccion(valor):
 
 
 def formatear_factor(valor):
-    """Formato compacto para factores usados en operaciones de fila."""
+    """Formatea un factor utilizado en operaciones elementales por filas.
+        Recibe un valor numérico y devuelve su representación textual compacta.
+        """
     return formatear_fraccion(valor)

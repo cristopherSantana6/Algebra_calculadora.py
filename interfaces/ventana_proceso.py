@@ -1,5 +1,9 @@
-"""Ventana visual paso a paso para Gauss y Gauss-Jordan."""
-
+"""
+Ventana visual para mostrar los procedimientos de Gauss y Gauss-Jordan.
+Presenta las operaciones elementales de fila y las matrices resultantes.
+Permite navegar paso a paso por el procedimiento de resolución.
+Utiliza Tkinter y ttk para construir la interfaz gráfica.
+"""
 import tkinter as tk
 from tkinter import ttk
 
@@ -10,6 +14,9 @@ class VentanaProceso:
     """Presenta una operación de fila a la vez con una matriz visual."""
 
     def __init__(self, parent, pasos, numero_variables, titulo="Procedimiento • Paso a paso"):
+        """Inicializa la ventana y prepara los datos del procedimiento.
+            Recibe la ventana principal, los pasos, las variables y el título.
+            """
         self.pasos = pasos
         self.numero_variables = numero_variables
         self.indice = 0
@@ -26,6 +33,7 @@ class VentanaProceso:
         self.mostrar_paso()
 
     def construir(self):
+        """Construye los componentes visuales y los controles de navegación."""
         contenedor = ttk.Frame(self.ventana, padding=24)
         contenedor.pack(fill="both", expand=True)
 
@@ -82,6 +90,9 @@ class VentanaProceso:
         self.boton_siguiente.pack(side="right")
 
     def mostrar_paso(self):
+        """Muestra la operación y la matriz correspondientes al paso actual.
+            Actualiza el indicador de progreso y habilita los botones necesarios.
+        """
         paso = self.pasos[self.indice]
         self.progreso.config(
             text=f"Paso {self.indice + 1} de {len(self.pasos)}"
@@ -108,11 +119,13 @@ class VentanaProceso:
             self.boton_siguiente.state(["!disabled"])
 
     def siguiente(self):
+        """Avanza al siguiente paso si todavía quedan pasos disponibles."""
         if self.indice < len(self.pasos) - 1:
             self.indice += 1
             self.mostrar_paso()
 
     def anterior(self):
+        """Retrocede al paso anterior si no se encuentra en el primero."""
         if self.indice > 0:
             self.indice -= 1
             self.mostrar_paso()

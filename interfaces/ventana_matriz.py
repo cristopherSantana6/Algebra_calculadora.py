@@ -1,4 +1,9 @@
-"""Componentes para mostrar matrices y procedimientos de forma visual."""
+"""
+Componentes visuales para representar matrices y vectores.
+Construye celdas matemáticas con Tkinter y ttk.
+Permite mostrar matrices aumentadas y vectores en formato visual.
+Utiliza fracciones exactas para presentar los valores numéricos.
+"""
 
 import tkinter as tk
 from tkinter import ttk
@@ -7,7 +12,10 @@ from utilidades.fracciones import formatear_fraccion
 
 
 def crear_matriz_visual(parent, matriz, numero_variables=None, cell_width=76, pad=2):
-    """Crea una matriz usando celdas visibles en lugar de texto monoespaciado."""
+    """Construye una representación visual de una matriz.
+    Recibe el contenedor, la matriz y opciones de formato.
+    Devuelve un Frame con las celdas y el separador de matriz aumentada.
+    """
     contenedor = ttk.Frame(parent, style="Matrix.TFrame")
     columnas = max((len(fila) for fila in matriz), default=0)
     for i, fila in enumerate(matriz):
@@ -38,7 +46,10 @@ def crear_matriz_visual(parent, matriz, numero_variables=None, cell_width=76, pa
 
 
 def crear_vector_visual(parent, vector, titulo=None, vertical=True):
-    """Muestra un vector como columna matemática."""
+    """Construye una representación visual de un vector.
+    Recibe el contenedor, los valores y la orientación deseada.
+    Devuelve un Frame con los elementos del vector y su título opcional.
+    """
     marco = ttk.Frame(parent, style="Card.TFrame")
     if titulo:
         ttk.Label(marco, text=titulo, style="SectionTitle.TLabel").pack(anchor="w", pady=(0, 6))

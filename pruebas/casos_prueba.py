@@ -1,4 +1,10 @@
-"""Casos de prueba del Programa 3 con aritmética racional exacta."""
+
+"""
+Pruebas funcionales de los algoritmos de Álgebra Lineal.
+Verifica operaciones matriciales, vectoriales y resolución de sistemas.
+Comprueba propiedades algebraicas y el manejo de dimensiones incompatibles.
+Utiliza assert para detectar resultados incorrectos durante la ejecución.
+"""
 
 from fractions import Fraction
 
@@ -29,7 +35,10 @@ from utilidades.fracciones import formatear_fraccion, leer_fraccion
 
 
 def ejecutar_casos():
-    """Ejecuta las pruebas principales exigidas por el módulo de vectores y matrices."""
+    """Ejecuta las pruebas funcionales de los algoritmos de la calculadora.
+       No recibe parámetros ni devuelve un resultado; utiliza assert y mensajes
+       para indicar si las comprobaciones se completan correctamente.
+       """
 
     # Sistema Ax=b: también valida la funcionalidad que ya tenía el Programa 1.
     matriz = [

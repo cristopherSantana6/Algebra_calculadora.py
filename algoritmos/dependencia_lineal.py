@@ -1,10 +1,9 @@
-"""Análisis de independencia y dependencia lineal para el Programa 4.
 
-Implementación con Python estándar. No utiliza NumPy, SymPy ni otras
-librerías externas. Los vectores se convierten en columnas de V y se
-estudia el sistema homogéneo Vc = 0 mediante Gauss-Jordan, hasta la
-forma escalonada reducida.
-"""
+"""Módulo para analizar la independencia y dependencia lineal de vectores.
+Implementa contenidos de Álgebra Lineal mediante sistemas homogéneos y Gauss-Jordan.
+Los vectores se representan como columnas de una matriz para estudiar sus relaciones.
+Elaborado por: Blanca Alejandra Zeledón Abea y  Rafael Antonio Arauz Navarro"""
+
 
 from fractions import Fraction
 
@@ -12,6 +11,10 @@ from algoritmos.eliminacion_gaussiana import es_homogeneo, gauss_jordan
 
 
 def _validar_vectores(vectores):
+    """Comprueba que exista al menos un vector y que todos tengan
+        la misma dimensión. Recibe una colección de vectores y genera
+        ValueError si no cumple las condiciones.
+        """
     if not vectores:
         raise ValueError("Debe proporcionar al menos un vector.")
     dimension = len(vectores[0])
@@ -22,12 +25,10 @@ def _validar_vectores(vectores):
 
 
 def analizar_conjunto_vectores(vectores):
-    """Evalúa un conjunto de vectores como L.I. o L.D.
-
-    Retorna la matriz de columnas V, el sistema homogéneo [V|0], la
-    forma escalonada reducida, los pivotes, las variables libres y, si
-    corresponde, una relación lineal no trivial.
-    """
+    """Analiza la independencia lineal de un conjunto de vectores.
+        Recibe los vectores y devuelve un diccionario con el rango,
+        los pivotes, las variables libres y una posible relación lineal.
+        """
     _validar_vectores(vectores)
 
     n = len(vectores[0])
@@ -39,7 +40,7 @@ def analizar_conjunto_vectores(vectores):
         for i in range(n)
     ]
 
-    # Sistema homogéneo Vc = 0.
+    # Se agrega la columna de ceros para representar el sistema homogéneo Vc = 0.
     matriz_homogenea = [
         fila[:] + [Fraction(0)]
         for fila in matriz_columnas

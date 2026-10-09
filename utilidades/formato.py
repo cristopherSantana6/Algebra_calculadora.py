@@ -1,20 +1,30 @@
-"""Funciones auxiliares de presentación."""
+"""
+Funciones auxiliares para presentar resultados de Álgebra Lineal.
+Formatea números racionales, operaciones elementales y matrices.
+Distingue matrices normales de matrices aumentadas para facilitar su lectura.
+"""
 
 from utilidades.fracciones import formatear_fraccion, formatear_factor
 
 
 def formatear_numero(valor):
-    """Muestra un valor racional como entero o fracción."""
+    """Convierte un valor racional a una representación legible.
+    Recibe un número y devuelve su representación como entero o fracción.
+    """
     return formatear_fraccion(valor)
 
 
 def formatear_operacion(valor):
-    """Muestra un factor de operación como fracción."""
+    """Formatea un factor utilizado en una operación matemática.
+    Recibe un valor numérico y devuelve su representación como fracción.
+    """
     return formatear_factor(valor)
 
 
 def formatear_operacion_eliminacion(fila, fila_pivote, factor):
-    """Genera una operación de fila legible usando fracciones."""
+    """Genera el texto de una operación elemental entre filas.
+    Recibe dos índices de fila y un factor; devuelve la operación formateada.
+    """
     factor_texto = formatear_factor(abs(factor))
     if factor > 0:
         return f"R{fila} ← R{fila} - ({factor_texto})R{fila_pivote}"
@@ -22,14 +32,8 @@ def formatear_operacion_eliminacion(fila, fila_pivote, factor):
 
 
 def formatear_matriz_lineas(matriz, numero_variables):
-    """Convierte matrices normales o aumentadas en líneas legibles.
-
-    Si la fila contiene exactamente ``numero_variables`` elementos, se trata
-    de una matriz normal (por ejemplo, el resultado de A+B, A-B, cA o A·B)
-    y se muestran todos sus elementos sin barra vertical.
-
-    Si contiene un elemento adicional, se interpreta como matriz aumentada
-    [A|b], utilizada por los sistemas Ax=b y la eliminación de Gauss.
+    """Convierte una matriz en líneas de texto para su presentación.
+    Recibe una matriz y el número de variables; devuelve una lista de líneas.
     """
     lineas = []
     for fila in matriz:

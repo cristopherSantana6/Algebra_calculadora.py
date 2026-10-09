@@ -1,4 +1,4 @@
-# Programa 4 - Calculadora de Álgebra Lineal
+# Programa 5 - Calculadora de Álgebra Lineal
 ## Grupo 4 - Universidad Americana
 
 Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz del Programa 1. Se conservaron Tkinter/ttk, la distribución por tarjetas, colores, tipografías y navegación visual, agregando las funciones solicitadas en el Programa 4.
@@ -119,3 +119,13 @@ Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, operacion
 - La sección activa de la barra lateral queda resaltada visualmente.
 - Los vectores generadores se muestran con subíndices matemáticos (v₁, v₂, v₃, …).
 - La eliminación de Gauss/Gauss-Jordan normaliza internamente los datos a `Fraction` para conservar exactitud también cuando el usuario introduce enteros.
+
+## Programa 5: Documentación del código
+
+Esta entrega corresponde a la documentación del código desarrollado en el Programa 4 de la asignatura Álgebra Lineal (MTM0120).
+
+El trabajo consiste en mejorar la documentación interna del proyecto mediante encabezados descriptivos para los módulos y cadenas de documentación (*docstrings*) para las clases y funciones. Se explica el propósito de cada componente y, cuando corresponde, los datos que recibe y los resultados que devuelve.
+
+Se conserva la estructura, la lógica matemática y la interfaz de la calculadora desarrollada anteriormente. El objetivo es facilitar la lectura, comprensión, mantenimiento y revisión del código, sin introducir operaciones matemáticas nuevas.
+
+La entrega incluye el código documentado, las pruebas correspondientes y el informe en PDF con las evidencias solicitadas por la docente.

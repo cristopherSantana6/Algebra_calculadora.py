@@ -1,9 +1,9 @@
-"""Algoritmos de eliminación por filas para el Programa 1.
 
-El cálculo se realiza con Fraction de la biblioteca estándar de Python,
-por lo que los resultados racionales se conservan de forma exacta.
-No se utilizan NumPy, SciPy ni funciones de álgebra lineal.
-"""
+"""Módulo para realizar eliminación Gaussiana y Gauss-Jordan en matrices.
+Implementa contenidos de Álgebra Lineal relacionados con sistemas de ecuaciones.
+Utiliza Fraction para conservar los resultados racionales de forma exacta.
+Elaborado por: "Patricia del Carmen Oquist Talavera y Rafael Antonio Arauz Navarro"""
+
 
 from fractions import Fraction
 
@@ -15,20 +15,22 @@ ZERO = Fraction(0, 1)
 
 
 def es_cero(valor):
-    """Determina si un valor es exactamente cero."""
+    """Determina si un valor es exactamente cero y devuelve True o False."""
     return valor == ZERO
 
 
 def copiar_matriz(matriz):
+    """Recibe una matriz y devuelve una copia independiente de sus filas."""
     return [fila[:] for fila in matriz]
 
 
 def intercambiar_filas(matriz, fila_a, fila_b):
+    """Recibe una matriz y dos índices de fila; intercambia ambas filas."""
     matriz[fila_a], matriz[fila_b] = matriz[fila_b], matriz[fila_a]
 
 
 def limpiar_ceros(matriz, numero_variables):
-    """Normaliza representaciones de cero."""
+    """Normaliza los valores cero de una matriz aumentada."""
     for i in range(len(matriz)):
         for j in range(numero_variables + 1):
             if es_cero(matriz[i][j]):
@@ -53,6 +55,8 @@ def eliminacion_gaussiana(matriz, numero_variables):
         if fila_pivote >= filas:
             break
 
+        # Se busca el mayor pivote disponible para evitar divisiones innecesarias
+        # y reducir problemas numéricos durante la eliminación.
         fila_mejor = fila_pivote
         for fila in range(fila_pivote + 1, filas):
             if abs(matriz_trabajo[fila][columna]) > abs(matriz_trabajo[fila_mejor][columna]):
@@ -128,11 +132,10 @@ def formatear_operacion_division(fila, divisor):
 
 
 def gauss_jordan(matriz, numero_variables):
-    """Reduce una matriz aumentada hasta forma escalonada reducida (Gauss-Jordan).
-
-    Se guarda cada operación elemental para mostrarla paso a paso.
-    La aritmética usa Fraction para conservar resultados exactos.
-    """
+    """Reduce una matriz aumentada a su forma escalonada reducida.
+       Recibe la matriz y el número de variables; devuelve la matriz
+       reducida, las posiciones pivote, la inconsistencia y los pasos.
+       """
     matriz_trabajo = [[Fraction(valor) for valor in fila] for fila in matriz]
     filas = len(matriz_trabajo)
     fila_pivote = 0
@@ -204,7 +207,10 @@ def gauss_jordan(matriz, numero_variables):
 
 
 def detectar_inconsistencia(matriz, numero_variables):
-    """Detecta una fila 0 ... 0 | c, con c distinto de cero."""
+    """Detecta si un sistema tiene una fila de coeficientes cero
+       con término independiente distinto de cero. Recibe la matriz
+       aumentada y el número de variables; devuelve True o False.
+       """
     for fila in matriz:
         coeficientes_cero = all(
             es_cero(fila[j]) for j in range(numero_variables)
@@ -215,8 +221,7 @@ def detectar_inconsistencia(matriz, numero_variables):
 
 
 def es_homogeneo(matriz, numero_variables):
-    """Un sistema es homogéneo si todos sus términos independientes son cero;
-    si al menos uno es distinto de cero, el sistema es heterogéneo."""
+    """Determina si todos los términos independientes del sistema son cero."""
     return all(es_cero(fila[numero_variables]) for fila in matriz)
 
 

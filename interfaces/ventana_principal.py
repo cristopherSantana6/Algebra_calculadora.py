@@ -1,7 +1,9 @@
-"""Interfaz principal de Linear Algebra Studio.
 
-La interfaz usa exclusivamente Tkinter/ttk, por lo que no requiere
-librerías externas y conserva la restricción de Python estándar.
+"""
+Interfaz principal de Linear Algebra Studio.
+Gestiona las vistas, la navegación y la interacción con el usuario.
+Integra los algoritmos de matrices, vectores y sistemas de ecuaciones.
+Utiliza Tkinter y ttk para construir la interfaz gráfica.
 """
 
 import tkinter as tk
@@ -170,6 +172,9 @@ class CalculadoraAlgebraLineal:
         self.generar_matriz()
 
     def configurar_estilos(self):
+        """Configura los estilos visuales de los componentes de la interfaz.
+        Utiliza la paleta activa para mantener una apariencia coherente.
+        """
         estilo = ttk.Style(self.root)
         try:
             estilo.theme_use("clam")
@@ -433,6 +438,7 @@ class CalculadoraAlgebraLineal:
             muestras[clave] = (muestra, fila_frame.winfo_children()[0])
 
         def elegir_color(clave):
+            """Permite seleccionar y actualizar un color de la paleta."""
             color = colorchooser.askcolor(
                 title=f"Elegir {clave}",
                 initialcolor=base[clave],
@@ -454,6 +460,7 @@ class CalculadoraAlgebraLineal:
                 )
 
         def cerrar():
+            """Cierra la ventana y elimina la asociación del desplazamiento."""
             try:
                 canvas.unbind_all("<MouseWheel>")
             except tk.TclError:
@@ -461,6 +468,7 @@ class CalculadoraAlgebraLineal:
             ventana.destroy()
 
         def guardar_personalizado():
+            """Guarda y aplica la combinación de colores personalizada."""
             personalizado = base.copy()
             personalizado["primary_dark"] = base["sidebar"]
             personalizado["sidebar_active"] = base["primary"]
@@ -511,14 +519,19 @@ class CalculadoraAlgebraLineal:
         entrada.bind("<Return>", lambda e, w=mover_derecha: self._mover_foco_especifico(w))
 
     def _limpiar_cero(self, entrada):
+        """Elimina el cero inicial cuando el usuario comienza a escribir.
+        Recibe un campo de entrada y lo modifica solo si contiene exactamente 0.
+        """
         if entrada.get().strip() == "0":
             entrada.delete(0, "end")
 
     def _restaurar_cero(self, entrada):
+        """Restablece el cero cuando una casilla queda vacía."""
         if not entrada.get().strip():
             entrada.insert(0, "0")
 
     def _mover_foco_especifico(self, destino):
+        """Mueve el foco del teclado a otra casilla de entrada."""
         if destino is not None:
             destino.focus_set()
             destino.icursor("end")
@@ -556,6 +569,9 @@ class CalculadoraAlgebraLineal:
             boton.configure(style="SidebarActive.TButton" if clave == nombre else "Sidebar.TButton")
 
     def construir_interfaz(self):
+        """Construye la estructura principal de la ventana.
+        Organiza la barra lateral, el encabezado y las vistas de la calculadora.
+        """
         self.contenedor = ttk.Frame(self.root)
         self.contenedor.pack(fill="both", expand=True)
 
@@ -580,7 +596,7 @@ class CalculadoraAlgebraLineal:
 
         ttk.Label(
             self.area,
-            text="Programa 4 • Álgebra Lineal (MTM0120) • Grupo 4",
+            text="Programa 5 • Álgebra Lineal (MTM0120) • Grupo 4",
             style="Footer.TLabel",
         ).pack(fill="x", padx=24, pady=(0, 8))
 
@@ -597,6 +613,7 @@ class CalculadoraAlgebraLineal:
             self.boton_ampliar_sidebar.destroy()
 
     def construir_sidebar(self):
+        """Crea la barra lateral con las opciones de navegación."""
         self.sidebar = ttk.Frame(self.contenedor, width=self.ancho_sidebar_colapsada, style="Sidebar.TFrame", padding=(16, 20))
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
@@ -656,7 +673,7 @@ class CalculadoraAlgebraLineal:
 
         ttk.Separator(self.sidebar).pack(fill="x", pady=22)
 
-        ttk.Label(self.sidebar, text="PROGRAMA 4", style="Sidebar.TLabel", font=("Segoe UI", 8, "bold")).pack(anchor="w")
+        ttk.Label(self.sidebar, text="PROGRAMA 5", style="Sidebar.TLabel", font=("Segoe UI", 8, "bold")).pack(anchor="w")
         ttk.Label(self.sidebar, text="Álgebra Vectorial y Matricial", style="Sidebar.TLabel").pack(anchor="w", pady=(4, 14))
 
         ttk.Button(self.sidebar, text="?   Información del grupo", style="Sidebar.TButton", command=self.mostrar_info).pack(fill="x", pady=3)
@@ -665,18 +682,21 @@ class CalculadoraAlgebraLineal:
         ttk.Label(self.sidebar, text="\nUniversidad Americana\nFacultad de Ingeniería y Arquitectura", style="Sidebar.TLabel", justify="left").pack(side="bottom", anchor="w")
 
     def construir_header(self):
+        """Construye el encabezado de la ventana principal."""
         header = ttk.Frame(self.area, padding=(24, 18), style="Top.TFrame")
         header.pack(fill="x")
 
         ttk.Label(header, text="Estudio de Álgebra Lineal", style="Header.TLabel").pack(anchor="w")
-        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 4  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
+        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 5  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
 
     def nueva_vista(self):
+        """Prepara una vista nueva para mostrar su contenido."""
         marco = ttk.Frame(self.contenido)
         marco.place(relx=0, rely=0, relwidth=1, relheight=1)
         return marco
 
     def construir_vista_entrada(self):
+        """Construye la vista para ingresar y resolver sistemas de ecuaciones."""
         self.vista_entrada = self.nueva_vista()
         self.vista_entrada.columnconfigure(0, weight=1)
         self.vista_entrada.columnconfigure(1, weight=1)
@@ -729,12 +749,14 @@ class CalculadoraAlgebraLineal:
         self.construir_resumen_placeholder()
 
     def construir_resumen_placeholder(self):
+        """Muestra el mensaje inicial cuando todavía no hay resultados."""
         for widget in self.resumen_contenido.winfo_children():
             widget.destroy()
         ttk.Label(self.resumen_contenido, text="Todavía no hay un resultado", style="SectionTitle.TLabel").pack(anchor="w", pady=(30, 5))
         ttk.Label(self.resumen_contenido, text="Ingrese una matriz y presione «Resolver Sistema».", style="CardSubtitle.TLabel").pack(anchor="w")
 
     def construir_vista_proceso(self):
+        """Construye la vista destinada al procedimiento de eliminación."""
         self.vista_proceso = self.nueva_vista()
         tarjeta = Tarjeta(self.vista_proceso, "Proceso Gaussiano", "Vista general del proceso y acceso al recorrido paso a paso.")
         tarjeta.pack(fill="both", expand=True)
@@ -793,6 +815,7 @@ class CalculadoraAlgebraLineal:
         self.mostrar_resultado_placeholder()
 
     def mostrar_resultado_placeholder(self):
+        """Muestra los mensajes iniciales cuando no hay resultados ni procedimientos."""
         for widget in self.resultado_resumen.winfo_children():
             widget.destroy()
         ttk.Label(
@@ -841,14 +864,17 @@ class CalculadoraAlgebraLineal:
         barra.pack(side="right", fill="y")
 
         def rueda(event):
+            """Desplaza verticalmente el contenido de la ventana de personalización."""
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
         # El desplazamiento queda ligado al área que contiene el cursor,
         # evitando mover otras ventanas de la aplicación.
         def entrar(_event):
+            """Activa el desplazamiento cuando el cursor entra al área."""
             canvas.bind_all("<MouseWheel>", rueda)
 
         def salir(_event):
+            """Desactiva el desplazamiento al salir del área."""
             try:
                 canvas.unbind_all("<MouseWheel>")
             except tk.TclError:
@@ -859,6 +885,7 @@ class CalculadoraAlgebraLineal:
         return interior
 
     def _agregar_seccion_analisis(self, parent, titulo, descripcion=None):
+        """Crea una sección visual con título y descripción opcional."""
         tarjeta = ttk.Frame(
             parent, style="AnalysisStep.TFrame", padding=14
         )
@@ -1883,6 +1910,7 @@ class CalculadoraAlgebraLineal:
         self.generar_matriz_vector()
 
     def crear_entradas_vector_mv(self, contenedor, titulo, n):
+        """Crea las casillas de entrada para un vector de dimensión n."""
         marco = ttk.Frame(contenedor, style="Card.TFrame")
         marco.pack(fill="x", pady=(5, 7))
         ttk.Label(marco, text=titulo, style="SectionTitle.TLabel").grid(row=0, column=0, sticky="w")
@@ -1943,6 +1971,7 @@ class CalculadoraAlgebraLineal:
         )
 
     def leer_matriz_vector_entries(self):
+        """Lee y convierte los valores ingresados para la operación matriz-vector."""
         try:
             matriz = [
                 [leer_fraccion(e.get()) for e in fila]
@@ -2029,6 +2058,7 @@ class CalculadoraAlgebraLineal:
         ).pack(anchor="center", pady=6)
 
     def _paso_producto_fila(self, fila, vector, numero_fila):
+        """Calcula el producto punto de una fila de la matriz con el vector."""
         terminos = " + ".join(
             f"({formatear_numero(a)})({formatear_numero(b)})"
             for a, b in zip(fila, vector)
@@ -2042,6 +2072,7 @@ class CalculadoraAlgebraLineal:
         )
 
     def calcular_matriz_vector(self):
+        """Calcula el producto de una matriz por un vector."""
         datos = self.leer_matriz_vector_entries()
         if datos is None:
             return
@@ -2123,6 +2154,7 @@ class CalculadoraAlgebraLineal:
         }, ir_a_resultados=False)
 
     def verificar_distributividad_mv(self):
+        """Comprueba la propiedad distributiva del producto matriz-vector."""
         datos = self.leer_matriz_vector_entries()
         if datos is None:
             return
@@ -2249,6 +2281,7 @@ class CalculadoraAlgebraLineal:
         self.generar_propiedades()
 
     def crear_entradas_propiedad_matriz(self, contenedor, filas, columnas, titulo):
+        """Crea las casillas para ingresar una matriz usada en una propiedad."""
         marco = ttk.Frame(contenedor, style="Card.TFrame")
         marco.pack(side="left", padx=(0, 10), pady=5, anchor="n")
         ttk.Label(marco, text=titulo, style="SectionTitle.TLabel").grid(row=0, column=0, columnspan=columnas, sticky="w", pady=(0, 5))
@@ -2935,7 +2968,7 @@ class CalculadoraAlgebraLineal:
     def mostrar_info(self):
         messagebox.showinfo(
             "Grupo 4",
-            "Programa 3 - Calculadora de Álgebra Lineal\n\n"
+            "Programa 5 - Calculadora de Álgebra Lineal\n\n"
             "Rafael Antonio Arauz Navarro\n"
             "Patricia del Carmen Oquist Talavera\n"
             "Cristopher Rafael Santana Ríos\n"
