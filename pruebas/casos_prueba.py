@@ -23,6 +23,10 @@ from algoritmos.matrices import (
     restar_matrices,
     sumar_matrices,
     trasponer_matriz,
+    determinante,
+    inversa_por_adjunta,
+    matriz_adjunta,
+    matriz_cofactores,
 )
 from algoritmos.vectores import (
     analizar_dependencia_lineal,
@@ -152,6 +156,36 @@ def ejecutar_casos():
         trasponer_matriz(B_t), trasponer_matriz(A_t)
     )
     print("✓ Traspuesta: Aᵀ, (Aᵀ)ᵀ = A y (AB)ᵀ = BᵀAᵀ correctas")
+
+    # Inversa por el método de la adjunta: A⁻¹ = (1/det A)·adj(A).
+    A_2 = [[Fraction(2), Fraction(1)], [Fraction(5), Fraction(3)]]
+    inv_2 = inversa_por_adjunta(A_2)
+    assert inv_2["determinante"] == 1
+    assert inv_2["adjunta"] == [[3, -1], [-5, 2]]
+    assert inv_2["inversa"] == [[3, -1], [-5, 2]]
+
+    A_3 = [
+        [Fraction(1), Fraction(2), Fraction(3)],
+        [Fraction(0), Fraction(1), Fraction(4)],
+        [Fraction(5), Fraction(6), Fraction(0)],
+    ]
+    assert determinante(A_3) == 1
+    assert matriz_adjunta(A_3) == trasponer_matriz(matriz_cofactores(A_3))
+    identidad_3 = [[1 if i == j else 0 for j in range(3)] for i in range(3)]
+    assert multiplicar_matrices(A_3, inversa_por_adjunta(A_3)["inversa"]) == identidad_3
+
+    A_frac = [[Fraction(1, 2), Fraction(1, 3)], [Fraction(1, 4), Fraction(1)]]
+    assert multiplicar_matrices(A_frac, inversa_por_adjunta(A_frac)["inversa"]) == [[1, 0], [0, 1]]
+    assert inversa_por_adjunta([[Fraction(4)]])["inversa"] == [[Fraction(1, 4)]]
+
+    for sin_inversa in ([[Fraction(1), Fraction(2)], [Fraction(2), Fraction(4)]],   # singular
+                        [[Fraction(1), Fraction(2), Fraction(3)]]):                # no cuadrada
+        try:
+            inversa_por_adjunta(sin_inversa)
+            raise AssertionError("Debió rechazar una matriz sin inversa.")
+        except ValueError:
+            pass
+    print("✓ Inversa por adjunta: det, cofactores, adj(A) = Cᵀ, A·A⁻¹ = I y casos sin inversa")
     print("✓ Matrices: validación de dimensiones incompatibles correcta")
 
     # Fracciones exactas.

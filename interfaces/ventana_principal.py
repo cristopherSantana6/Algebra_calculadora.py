@@ -26,6 +26,9 @@ from algoritmos.matrices import (
     restar_matrices,
     sumar_matrices,
     trasponer_matriz,
+    inversa_por_adjunta,
+    menor,
+    determinante,
 )
 from algoritmos.vectores import (
     analizar_dependencia_lineal,
@@ -1512,6 +1515,7 @@ class CalculadoraAlgebraLineal:
         opciones = [
             "Suma (A + B)", "Resta (A - B)", "Escalar (cA)", "Multiplicación (A · B)",
             "Traspuesta (Aᵀ)", "Traspuesta del producto (A · B)ᵀ",
+            "Inversa por adjunta (A⁻¹)",
         ]
         ttk.Combobox(config, textvariable=self.operacion_matriz, values=opciones, state="readonly", width=32).grid(row=3, column=0, columnspan=5, sticky="w", pady=4)
         ttk.Button(config, text="Generar matrices", style="Accent.TButton", command=self.generar_matrices).grid(row=3, column=6, padx=5)
@@ -1571,7 +1575,7 @@ class CalculadoraAlgebraLineal:
         self.matriz_b_entries = self.crear_entradas_matriz(self.marco_matrices, fb, cb, titulo_b)
         self.preparar_navegacion(self.matriz_a_entries + self.matriz_b_entries)
         ttk.Label(self.marco_matrices, text="Para cA, el escalar se toma del campo de operación.", style="CardSubtitle.TLabel").pack(anchor="w", pady=5)
-        ttk.Label(self.marco_matrices, text="Para Aᵀ solo se usa la matriz A; B se ignora.", style="CardSubtitle.TLabel").pack(anchor="w")
+        ttk.Label(self.marco_matrices, text="Para Aᵀ y A⁻¹ solo se usa la matriz A; B se ignora.", style="CardSubtitle.TLabel").pack(anchor="w")
         self.mostrar_resultado_matriz("Genere las matrices, complete sus entradas y calcule.")
 
     def leer_matriz_entries(self, entries):
@@ -1602,8 +1606,21 @@ class CalculadoraAlgebraLineal:
         op = self.operacion_matriz.get()
         producto = None
         comprobacion = None
+        inversa = None
         try:
-            if op == "Traspuesta (Aᵀ)":
+            if op == "Inversa por adjunta (A⁻¹)":
+                inversa = inversa_por_adjunta(a)
+                resultado = inversa["inversa"]
+                # Comprobación: A·A⁻¹ debe ser la matriz identidad.
+                comprobacion = multiplicar_matrices(a, resultado)
+                titulo = "Inversa por el método de la adjunta"
+                formula = "A⁻¹ = (1/det A)·adj(A)"
+                explicacion = (
+                    "Una matriz cuadrada tiene inversa solo si det(A) ≠ 0. Se calculan los "
+                    "cofactores Cᵢⱼ = (−1)^(i+j)·det(Mᵢⱼ), la adjunta adj(A) = Cᵀ y "
+                    "finalmente A⁻¹ = (1/det A)·adj(A)."
+                )
+            elif op == "Traspuesta (Aᵀ)":
                 resultado = trasponer_matriz(a)
                 titulo = "Traspuesta de una matriz"
                 formula = "Aᵀ"
@@ -1648,14 +1665,17 @@ class CalculadoraAlgebraLineal:
                     "Cada entrada cᵢⱼ se obtiene multiplicando una fila de A por una columna de B."
                 )
         except ValueError as error:
-            messagebox.showerror("Dimensiones incompatibles", str(error))
+            titulo_error = "Matriz sin inversa" if op == "Inversa por adjunta (A⁻¹)" else "Dimensiones incompatibles"
+            messagebox.showerror(titulo_error, str(error))
             return
 
         # Expresión acumulada: dice qué representa el resultado en función
         # de los datos originales, por ejemplo «(A·B)ᵀ + B».
         ea = self._envolver(self.expresion_a)
         eb = self._envolver(self.expresion_b)
-        if op == "Traspuesta (Aᵀ)":
+        if inversa is not None:
+            expresion = f"{ea}⁻¹"
+        elif op == "Traspuesta (Aᵀ)":
             expresion = f"{ea}ᵀ"
         elif op == "Traspuesta del producto (A · B)ᵀ":
             expresion = f"({ea}·{eb})ᵀ"
@@ -1679,7 +1699,7 @@ class CalculadoraAlgebraLineal:
         )
         fila = ttk.Frame(datos, style="Card.TFrame")
         fila.pack(fill="x", pady=6)
-        usa_b = op not in ("Escalar (cA)", "Traspuesta (Aᵀ)")
+        usa_b = op not in ("Escalar (cA)", "Traspuesta (Aᵀ)", "Inversa por adjunta (A⁻¹)")
         crear_matriz_visual(
             fila, a, len(a[0])
         ).pack(side="left", padx=(0, 18))
@@ -1695,6 +1715,8 @@ class CalculadoraAlgebraLineal:
 
         if op == "Multiplicación (A · B)":
             self._mostrar_pasos_producto(paso, a, b, resultado)
+        elif inversa is not None:
+            self._mostrar_pasos_inversa(interior, paso, a, inversa, comprobacion)
         elif op == "Traspuesta (Aᵀ)":
             self._mostrar_pasos_traspuesta(paso, a, "A", "Aᵀ")
         elif producto is not None:
@@ -1748,7 +1770,10 @@ class CalculadoraAlgebraLineal:
         if producto is not None:
             metricas.append(("Dimensión A·B", f"{len(producto)}×{len(producto[0])}"))
         metricas.append(("Dimensión resultado", f"{len(resultado)}×{len(resultado[0])}"))
-        if comprobacion is not None:
+        if inversa is not None:
+            metricas.append(("det(A)", formatear_numero(inversa["determinante"])))
+            metricas.append(("A·A⁻¹ = I", "Verificada" if self._es_identidad(comprobacion) else "No coincide"))
+        elif comprobacion is not None:
             metricas.append(("(A·B)ᵀ = BᵀAᵀ", "Verificada" if comprobacion == resultado else "No coincide"))
 
         pasos_visuales = [{"titulo": "Datos de entrada", "matriz": a, "numero_variables": len(a[0])}]
@@ -1821,6 +1846,75 @@ class CalculadoraAlgebraLineal:
         self.ultima_expresion = None
         self.generar_matrices()
         self._rellenar_matrices(texto_a, texto_b)
+
+    @staticmethod
+    def _es_identidad(matriz):
+        """True si la matriz tiene unos en la diagonal y ceros fuera de ella."""
+        return all(
+            valor == (1 if i == j else 0)
+            for i, fila in enumerate(matriz)
+            for j, valor in enumerate(fila)
+        )
+
+    def _mostrar_pasos_inversa(self, interior, paso, a, inversa, comprobacion):
+        """Muestra el método de la adjunta: det → cofactores → adjunta → inversa → comprobación."""
+        det = inversa["determinante"]
+        n = len(a)
+
+        # Paso 1: determinante y condición de invertibilidad.
+        ttk.Label(
+            paso, text=f"det(A) = {formatear_numero(det)} ≠ 0  →  A sí tiene inversa.",
+            style="Operation.TLabel",
+        ).pack(anchor="w", pady=(4, 2))
+
+        # Paso 2: cofactores, uno por entrada.
+        paso2 = self._agregar_seccion_analisis(
+            interior, "Paso 2 — Matriz de cofactores",
+            "Cada cofactor es Cᵢⱼ = (−1)^(i+j)·det(Mᵢⱼ), donde Mᵢⱼ es A sin la fila i ni la columna j."
+        )
+        for i in range(n):
+            for j in range(n):
+                signo = 1 if (i + j) % 2 == 0 else -1
+                det_menor = determinante(menor(a, i, j))
+                ttk.Label(
+                    paso2,
+                    text=(f"C{i+1},{j+1} = (−1)^({i+1}+{j+1})·det(M{i+1},{j+1}) = "
+                          f"({signo})({formatear_numero(det_menor)}) = "
+                          f"{formatear_numero(inversa['cofactores'][i][j])}"),
+                    style="AnalysisBody.TLabel", wraplength=650,
+                ).pack(anchor="w", pady=1)
+        crear_matriz_visual(
+            paso2, inversa["cofactores"], n
+        ).pack(anchor="center", pady=6)
+
+        # Paso 3: adjunta = traspuesta de los cofactores.
+        paso3 = self._agregar_seccion_analisis(
+            interior, "Paso 3 — Matriz adjunta",
+            "adj(A) = Cᵀ: la fila i de los cofactores pasa a ser la columna i."
+        )
+        crear_matriz_visual(paso3, inversa["adjunta"], n).pack(anchor="center", pady=6)
+
+        # Paso 4: inversa.
+        paso4 = self._agregar_seccion_analisis(
+            interior, "Paso 4 — Inversa",
+            f"A⁻¹ = (1/det A)·adj(A) = (1/{formatear_numero(det)})·adj(A): "
+            "se divide cada entrada de la adjunta entre el determinante."
+        )
+        crear_matriz_visual(paso4, inversa["inversa"], n).pack(anchor="center", pady=6)
+
+        # Comprobación: A·A⁻¹ = I.
+        es_identidad = self._es_identidad(comprobacion)
+        comp = self._agregar_seccion_analisis(
+            interior, "Comprobación — A·A⁻¹ = I",
+            "Si la inversa es correcta, al multiplicarla por A se obtiene la matriz identidad."
+        )
+        crear_matriz_visual(comp, comprobacion, n).pack(anchor="center", pady=6)
+        ttk.Label(
+            comp,
+            text="✓ A·A⁻¹ es la identidad." if es_identidad else "✗ A·A⁻¹ no es la identidad.",
+            style="Status.TLabel" if es_identidad else "StatusBad.TLabel",
+            padding=8,
+        ).pack(anchor="w", pady=(4, 0))
 
     def _mostrar_pasos_producto(self, parent, a, b, producto):
         """Muestra cada entrada cᵢⱼ de A·B como fila de A por columna de B."""

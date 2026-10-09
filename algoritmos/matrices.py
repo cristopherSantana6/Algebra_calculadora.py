@@ -90,6 +90,80 @@ def trasponer_matriz(a):
     return [[a[i][j] for i in range(filas)] for j in range(columnas)]
 
 
+def validar_cuadrada(a):
+    """Comprueba que A sea cuadrada; requisito para el determinante y la inversa."""
+    validar_matriz(a)
+    if len(a) != len(a[0]):
+        raise ValueError("La matriz debe ser cuadrada (n×n) para calcular su inversa.")
+
+
+def menor(a, i, j):
+    """Devuelve la submatriz M_ij: A sin la fila i ni la columna j."""
+    return [
+        [a[f][c] for c in range(len(a[0])) if c != j]
+        for f in range(len(a)) if f != i
+    ]
+
+
+def determinante(a):
+    """Calcula det(A) por eliminación por filas con fracciones exactas.
+
+    Cada intercambio de filas cambia el signo del determinante; al final,
+    det(A) es el producto de la diagonal de la matriz triangular obtenida.
+    """
+    if not a:
+        return Fraction(1)  # Convención: el menor de una matriz 1×1 es vacío.
+    m = [[Fraction(valor) for valor in fila] for fila in a]
+    n = len(m)
+    signo = 1
+    for col in range(n):
+        fila_pivote = next((f for f in range(col, n) if m[f][col] != 0), None)
+        if fila_pivote is None:
+            return Fraction(0)  # Columna sin pivote: la matriz es singular.
+        if fila_pivote != col:
+            m[col], m[fila_pivote] = m[fila_pivote], m[col]
+            signo = -signo
+        for f in range(col + 1, n):
+            factor = m[f][col] / m[col][col]
+            for c in range(col, n):
+                m[f][c] -= factor * m[col][c]
+    resultado = Fraction(signo)
+    for k in range(n):
+        resultado *= m[k][k]
+    return resultado
+
+
+def matriz_cofactores(a):
+    """Calcula la matriz de cofactores: C_ij = (-1)^(i+j) · det(M_ij)."""
+    validar_cuadrada(a)
+    n = len(a)
+    return [
+        [(1 if (i + j) % 2 == 0 else -1) * determinante(menor(a, i, j)) for j in range(n)]
+        for i in range(n)
+    ]
+
+
+def matriz_adjunta(a):
+    """La adjunta es la traspuesta de la matriz de cofactores: adj(A) = Cᵀ."""
+    return trasponer_matriz(matriz_cofactores(a))
+
+
+def inversa_por_adjunta(a):
+    """Calcula A⁻¹ = (1/det A) · adj(A) y devuelve también los pasos intermedios."""
+    validar_cuadrada(a)
+    det = determinante(a)
+    if det == 0:
+        raise ValueError("La matriz es singular (det = 0): no tiene inversa.")
+    cofactores = matriz_cofactores(a)
+    adjunta = trasponer_matriz(cofactores)
+    return {
+        "determinante": det,
+        "cofactores": cofactores,
+        "adjunta": adjunta,
+        "inversa": multiplicar_matriz_escalar(adjunta, Fraction(1) / det),
+    }
+
+
 def multiplicar_matriz_vector(matriz, vector):
     """Calcula el producto de una matriz por un vector.
        Recibe una matriz A y un vector compatible; devuelve un vector de longitud filas(A).
