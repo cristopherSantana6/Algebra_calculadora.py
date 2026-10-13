@@ -229,11 +229,13 @@ def inversa_gauss_jordan(a):
     }]
 
     for col in range(n):
+        # Pivote: el mayor valor absoluto de la columna (de la diagonal hacia abajo).
         fila_mejor = col
         for fila in range(col + 1, n):
             if abs(m[fila][col]) > abs(m[fila_mejor][col]):
                 fila_mejor = fila
 
+        # Sin pivote en la columna, A es singular y no hay inversa.
         if es_cero(m[fila_mejor][col]):
             raise ValueError(
                 f"La matriz es singular: la columna {col + 1} no tiene pivote, "
@@ -248,6 +250,7 @@ def inversa_gauss_jordan(a):
                 "matriz": copiar_matriz(m),
             })
 
+        # Se normaliza la fila para que el pivote valga 1 (también afecta la parte de I).
         pivote = m[col][col]
         if pivote != 1:
             m[col] = [valor / pivote for valor in m[col]]
@@ -276,6 +279,7 @@ def inversa_gauss_jordan(a):
         "operacion": "A la izquierda quedó la identidad; a la derecha está A⁻¹.",
         "matriz": copiar_matriz(m),
     })
+    # La inversa son las últimas n columnas de [I | A⁻¹].
     return {
         "inversa": [fila[n:] for fila in m],
         "aumentada_final": m,

@@ -1607,6 +1607,7 @@ class CalculadoraAlgebraLineal:
         for nombre, texto in botones:
             boton = ttk.Button(
                 fila_botones, text=texto, style="Op.TButton", width=0,
+                # n=nombre fija el valor de este botón (sin él, todos usarían el último).
                 command=lambda n=nombre: self.operar_matriz(n)
             )
             boton.pack(side="left", padx=(0, 3))
@@ -1655,6 +1656,7 @@ class CalculadoraAlgebraLineal:
         """Habilita o deshabilita cada botón según las dimensiones y resalta la operación activa."""
         activa = self.operacion_matriz.get()
         for nombre, boton in self.botones_operacion.items():
+            # Si _requisito_matriz devuelve un motivo, el botón se deshabilita.
             boton.state(["disabled"] if self._requisito_matriz(nombre) else ["!disabled"])
             boton.configure(style="OpActive.TButton" if nombre == activa else "Op.TButton")
         self._ayuda_operacion(activa or None)
@@ -1672,6 +1674,7 @@ class CalculadoraAlgebraLineal:
         if nuevas == actuales:
             self.actualizar_botones_matrices()
             return
+        # Se guarda lo escrito, se regeneran las casillas y se vuelve a rellenar.
         texto_a = [[e.get() for e in fila] for fila in self.matriz_a_entries]
         texto_b = [[e.get() for e in fila] for fila in self.matriz_b_entries]
         self.generar_matrices()
@@ -1741,6 +1744,8 @@ class CalculadoraAlgebraLineal:
 
     def operar_matriz(self, op):
         """Ejecuta la operación matricial `op` y muestra el procedimiento visual."""
+        # Flujo: validar dimensiones → leer solo A/B → llamar a algoritmos/ → mostrar pasos.
+        # La interfaz no calcula nada: solo dibuja lo que devuelven las funciones.
         motivo = self._requisito_matriz(op)
         if motivo:
             self.ayuda_matrices.set(f"⚠ No disponible: {motivo}")
@@ -1891,6 +1896,7 @@ class CalculadoraAlgebraLineal:
                     "Cada entrada cᵢⱼ se obtiene multiplicando una fila de A por una columna de B."
                 )
         except ValueError as error:
+            # Las funciones de algoritmos/ lanzan ValueError; aquí se convierte en mensaje.
             if op.startswith("Inversa"):
                 titulo_error = "Matriz sin inversa"
             elif op.startswith("Regla de Cramer"):
@@ -2154,7 +2160,7 @@ class CalculadoraAlgebraLineal:
             style="Operation.TLabel",
         ).pack(anchor="w", pady=(4, 2))
 
-        # Paso 2: cofactores, uno por entrada.
+        # Paso 2: cofactores, uno por entrada (los valores vienen de inversa_por_adjunta).
         paso2 = self._agregar_seccion_analisis(
             interior, "Paso 2 — Matriz de cofactores",
             "Cada cofactor es Cᵢⱼ = (−1)^(i+j)·det(Mᵢⱼ), donde Mᵢⱼ es A sin la fila i ni la columna j."
@@ -2256,6 +2262,7 @@ class CalculadoraAlgebraLineal:
         ).pack(anchor="w", pady=(4, 2))
         crear_matriz_visual(paso, pasos[0]["matriz"]).pack(anchor="center", pady=6)
 
+        # Una tarjeta por operación de fila; la nota explica su efecto en el signo de det.
         for numero, datos in enumerate(pasos[1:], start=2):
             tarjeta = self._agregar_seccion_analisis(
                 interior, f"Paso {numero} — {datos['titulo']}", datos["operacion"]
@@ -2278,6 +2285,7 @@ class CalculadoraAlgebraLineal:
 
     def _mostrar_comprobacion_determinante(self, interior, det, otro, otro_metodo):
         """Compara det(A) con el obtenido por el otro método e indica si A es invertible."""
+        # Cada método se verifica contra el otro; det ≠ 0 ⇔ A invertible.
         coincide = otro == det
         comp = self._agregar_seccion_analisis(
             interior, f"Comprobación — {otro_metodo}",
@@ -2306,6 +2314,7 @@ class CalculadoraAlgebraLineal:
             paso, text="Se repiten las dos primeras columnas a la derecha de A:",
             style="Operation.TLabel", wraplength=650,
         ).pack(anchor="w", pady=(4, 2))
+        # Solo para mostrar: el cálculo real (determinante_sarrus) usa "% 3" en vez de copiar columnas.
         crear_matriz_visual(paso, [fila + fila[:2] for fila in a], 3).pack(anchor="center", pady=6)
 
         grupos = [
@@ -2345,6 +2354,7 @@ class CalculadoraAlgebraLineal:
             style="Operation.TLabel", wraplength=650,
         ).pack(anchor="w", pady=(4, 2))
 
+        # Una tarjeta por incógnita: Aᵢ, su determinante y xᵢ = det(Aᵢ)/det(A).
         for datos in cramer["pasos"]:
             i = datos["columna"] + 1
             tarjeta = self._agregar_seccion_analisis(
@@ -2360,6 +2370,7 @@ class CalculadoraAlgebraLineal:
                 style="Operation.TLabel", wraplength=650,
             ).pack(anchor="w")
 
+        # Con Fraction la igualdad es exacta, sin errores de redondeo.
         coincide = [fila[0] for fila in comprobacion] == b_vector
         comp = self._agregar_seccion_analisis(
             interior, "Comprobación — A·x = b",
@@ -2380,6 +2391,7 @@ class CalculadoraAlgebraLineal:
             style="Operation.TLabel",
         ).pack(anchor="w", pady=(4, 2))
         # Pasando numero_variables = n, la barra «│» separa A de I.
+        # Cada paso de inversa_gauss_jordan trae su matriz [A | I] ya transformada.
         crear_matriz_visual(paso, pasos[0]["matriz"], n).pack(anchor="center", pady=6)
 
         for numero, datos in enumerate(pasos[1:], start=2):

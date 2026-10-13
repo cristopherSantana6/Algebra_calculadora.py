@@ -109,6 +109,7 @@ def menor(a, i, j):
 
 def determinante(a):
     """Calcula det(A) por eliminación por filas con fracciones exactas."""
+    # Atajo usado por la adjunta: det(M_ij) por reducción de filas.
     if not a:
         return Fraction(1)  # Convención: el menor de una matriz 1×1 es vacío.
     return determinante_reduccion(a)["determinante"]
@@ -157,6 +158,7 @@ def determinante_reduccion(a):
                 "matriz": [fila[:] for fila in m],
             })
 
+        # Se anula cada entrada bajo el pivote: Rf ← Rf − factor·Rcol (no cambia det).
         for f in range(col + 1, n):
             factor = m[f][col] / m[col][col]
             if factor == 0:
@@ -169,6 +171,7 @@ def determinante_reduccion(a):
                 "matriz": [fila[:] for fila in m],
             })
 
+    # det = (±1 por los intercambios) · producto de la diagonal triangular.
     diagonal = [m[k][k] for k in range(n)]
     resultado = Fraction(signo)
     for valor in diagonal:
@@ -189,6 +192,7 @@ def determinante_cofactores(a):
     desarrollando por la fila f con más ceros (los términos con a_fj = 0 valen 0).
     """
     n = len(a)
+    # Casos base de la recursión: 1×1 y 2×2.
     if n == 1:
         return Fraction(a[0][0])
     if n == 2:
@@ -198,6 +202,7 @@ def determinante_cofactores(a):
     for j in range(n):
         if a[f][j] == 0:
             continue
+        # Signo del cofactor: tablero de ajedrez (−1)^(f+j).
         signo = 1 if (f + j) % 2 == 0 else -1
         total += a[f][j] * signo * determinante_cofactores(menor(a, f, j))
     return total
@@ -211,6 +216,7 @@ def desarrollo_cofactores(a):
     """
     validar_cuadrada(a)
     n = len(a)
+    # Misma fila que usa determinante_cofactores; aquí solo se guarda el primer nivel para mostrarlo.
     f = _fila_con_mas_ceros(a) if n > 1 else 0
     terminos = []
     for j in range(n):
@@ -243,6 +249,7 @@ def determinante_sarrus(a):
     a = [[Fraction(valor) for valor in fila] for fila in a]
     principales, secundarias = [], []
     for k in range(3):
+        # El "% 3" equivale a repetir las dos primeras columnas, sin armar una matriz 3×5.
         # Diagonal descendente que empieza en la columna k y ascendente que empieza en la k.
         principales.append([a[i][(k + i) % 3] for i in range(3)])
         secundarias.append([a[2 - i][(k + i) % 3] for i in range(3)])
@@ -252,6 +259,7 @@ def determinante_sarrus(a):
 
     prod_principales = [producto(d) for d in principales]
     prod_secundarias = [producto(d) for d in secundarias]
+    # det(A) = suma de las diagonales ↘ menos suma de las diagonales ↗.
     return {
         "principales": principales, "secundarias": secundarias,
         "prod_principales": prod_principales, "prod_secundarias": prod_secundarias,
@@ -274,11 +282,13 @@ def resolver_cramer(a, b):
         raise ValueError("El vector b debe tener tantas entradas como filas tiene A.")
     det_a = determinante_cofactores(a)
     if det_a == 0:
+        # Sin det(A) ≠ 0 no hay solución única y no se puede dividir.
         raise ValueError(
             "det(A) = 0: la regla de Cramer no aplica (el sistema no tiene solución única)."
         )
     pasos = []
     for i in range(n):
+        # Aᵢ: copia de A con la columna i reemplazada por b.
         a_i = [fila[:i] + [b[f]] + fila[i + 1:] for f, fila in enumerate(a)]
         det_i = determinante_cofactores(a_i)
         pasos.append({"columna": i, "matriz": a_i, "determinante": det_i, "x": det_i / det_a})
@@ -289,6 +299,7 @@ def matriz_cofactores(a):
     """Calcula la matriz de cofactores: C_ij = (-1)^(i+j) · det(M_ij)."""
     validar_cuadrada(a)
     n = len(a)
+    # Un cofactor por entrada: signo de ajedrez por el determinante de su menor.
     return [
         [(1 if (i + j) % 2 == 0 else -1) * determinante(menor(a, i, j)) for j in range(n)]
         for i in range(n)
@@ -307,6 +318,7 @@ def inversa_por_adjunta(a):
     if det == 0:
         raise ValueError("La matriz es singular (det = 0): no tiene inversa.")
     cofactores = matriz_cofactores(a)
+    # adj(A) = Cᵀ; A⁻¹ = adj(A) / det(A).
     adjunta = trasponer_matriz(cofactores)
     return {
         "determinante": det,
