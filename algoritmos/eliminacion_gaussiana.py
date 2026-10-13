@@ -206,6 +206,83 @@ def gauss_jordan(matriz, numero_variables):
     return matriz_trabajo, pivotes, inconsistente, pasos
 
 
+def inversa_gauss_jordan(a):
+    """Calcula A⁻¹ reduciendo la matriz aumentada [A | I] hasta [I | A⁻¹].
+
+    Aplica las mismas operaciones elementales que gauss_jordan, pero sobre
+    las 2n columnas de [A | I]. Si alguna columna de A no tiene pivote, la
+    matriz es singular y no tiene inversa. Devuelve la inversa y los pasos.
+    """
+    if not a or not a[0] or any(len(fila) != len(a) for fila in a):
+        raise ValueError("La matriz debe ser cuadrada (n×n) para calcular su inversa.")
+
+    n = len(a)
+    # Matriz aumentada [A | I]: cada fila de A seguida de la fila de la identidad.
+    m = [
+        [Fraction(valor) for valor in a[i]] + [Fraction(1 if i == j else 0) for j in range(n)]
+        for i in range(n)
+    ]
+    pasos = [{
+        "titulo": "Matriz aumentada [A | I]",
+        "operacion": "Se escribe A a la izquierda y la identidad a la derecha.",
+        "matriz": copiar_matriz(m),
+    }]
+
+    for col in range(n):
+        fila_mejor = col
+        for fila in range(col + 1, n):
+            if abs(m[fila][col]) > abs(m[fila_mejor][col]):
+                fila_mejor = fila
+
+        if es_cero(m[fila_mejor][col]):
+            raise ValueError(
+                f"La matriz es singular: la columna {col + 1} no tiene pivote, "
+                "por lo que no tiene inversa."
+            )
+
+        if fila_mejor != col:
+            intercambiar_filas(m, fila_mejor, col)
+            pasos.append({
+                "titulo": "Intercambio de filas",
+                "operacion": f"R{col + 1} ↔ R{fila_mejor + 1}",
+                "matriz": copiar_matriz(m),
+            })
+
+        pivote = m[col][col]
+        if pivote != 1:
+            m[col] = [valor / pivote for valor in m[col]]
+            pasos.append({
+                "titulo": "División de la fila pivote",
+                "operacion": formatear_operacion_division(col + 1, pivote),
+                "matriz": copiar_matriz(m),
+            })
+
+        # Se hacen ceros arriba y abajo del pivote en toda la fila de 2n columnas.
+        for fila in range(n):
+            if fila == col:
+                continue
+            factor = m[fila][col]
+            if es_cero(factor):
+                continue
+            m[fila] = [x - factor * y for x, y in zip(m[fila], m[col])]
+            pasos.append({
+                "titulo": "Eliminación de la columna pivote",
+                "operacion": formatear_operacion_eliminacion(fila + 1, col + 1, factor),
+                "matriz": copiar_matriz(m),
+            })
+
+    pasos.append({
+        "titulo": "Resultado [I | A⁻¹]",
+        "operacion": "A la izquierda quedó la identidad; a la derecha está A⁻¹.",
+        "matriz": copiar_matriz(m),
+    })
+    return {
+        "inversa": [fila[n:] for fila in m],
+        "aumentada_final": m,
+        "pasos": pasos,
+    }
+
+
 def detectar_inconsistencia(matriz, numero_variables):
     """Detecta si un sistema tiene una fila de coeficientes cero
        con término independiente distinto de cero. Recibe la matriz

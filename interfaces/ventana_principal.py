@@ -15,6 +15,7 @@ from algoritmos.eliminacion_gaussiana import (
     eliminacion_gaussiana,
     es_homogeneo,
     gauss_jordan,
+    inversa_gauss_jordan,
     obtener_clasificacion,
     resolver_solucion_unica,
     verificar_solucion,
@@ -29,6 +30,11 @@ from algoritmos.matrices import (
     inversa_por_adjunta,
     menor,
     determinante,
+    desarrollo_cofactores,
+    determinante_cofactores,
+    determinante_reduccion,
+    determinante_sarrus,
+    resolver_cramer,
 )
 from algoritmos.vectores import (
     analizar_dependencia_lineal,
@@ -101,6 +107,37 @@ class CalculadoraAlgebraLineal:
         },
     }
 
+    # Operaciones del módulo de matrices: nombre → (usa A, usa B, ayuda).
+    OPERACIONES_MATRIZ = {
+        "Suma (A + B)": (True, True, "Suma entrada por entrada. A y B deben tener las mismas dimensiones."),
+        "Resta (A - B)": (True, True, "Resta entrada por entrada. A y B deben tener las mismas dimensiones."),
+        "Escalar (cA)": (True, False, "Multiplica A por el escalar c (campo junto al botón). Solo usa A."),
+        "Multiplicación (A · B)": (True, True, "Producto fila por columna. Columnas de A = filas de B."),
+        "Traspuesta (Aᵀ)": (True, False, "Convierte las filas de A en columnas. Solo usa A."),
+        "Traspuesta (Bᵀ)": (False, True, "Convierte las filas de B en columnas. Solo usa B."),
+        "Traspuesta del producto (A · B)ᵀ": (True, True, "Calcula A·B y lo traspone; comprueba (A·B)ᵀ = BᵀAᵀ."),
+        "Inversa por adjunta (A⁻¹)": (True, False, "A⁻¹ = adj(A)/det(A). A debe ser cuadrada con det ≠ 0."),
+        "Inversa por Gauss-Jordan (A⁻¹)": (True, False, "Reduce [A | I] hasta [I | A⁻¹]. A debe ser cuadrada con det ≠ 0."),
+        "Determinante por cofactores (det A)": (True, False, "Desarrollo de Laplace por la fila con más ceros. A cuadrada."),
+        "Determinante por reducción de filas (det A)": (True, False, "Triangulariza A y multiplica la diagonal. A cuadrada."),
+        "Determinante por Sarrus (det A)": (True, False, "Diagonales de una matriz 3×3. A debe ser 3×3."),
+        "Regla de Cramer (Ax = b)": (True, True, "Resuelve Ax = b con determinantes; b es la primera columna de B. A n×n, B con n filas."),
+    }
+
+    # Botones por grupo: (título, [(nombre de la operación, texto del botón), ...]).
+    GRUPOS_MATRIZ = [
+        ("Básicas", [("Suma (A + B)", "A + B"), ("Resta (A - B)", "A − B"),
+                     ("Escalar (cA)", "c · A"), ("Multiplicación (A · B)", "A · B")]),
+        ("Traspuesta", [("Traspuesta (Aᵀ)", "Aᵀ"), ("Traspuesta (Bᵀ)", "Bᵀ"),
+                        ("Traspuesta del producto (A · B)ᵀ", "(A·B)ᵀ")]),
+        ("Inversa A⁻¹", [("Inversa por adjunta (A⁻¹)", "Adjunta"),
+                         ("Inversa por Gauss-Jordan (A⁻¹)", "Gauss-Jordan")]),
+        ("Determinante", [("Determinante por cofactores (det A)", "Cofactores"),
+                          ("Determinante por reducción de filas (det A)", "Reducción"),
+                          ("Determinante por Sarrus (det A)", "Sarrus")]),
+        ("Sistema Ax = b", [("Regla de Cramer (Ax = b)", "Cramer")]),
+    ]
+
     # Valores iniciales; se reemplazan por la paleta guardada en disco.
     TEAL = "#2E7778"
     TEAL_DARK = "#1F5558"
@@ -129,7 +166,10 @@ class CalculadoraAlgebraLineal:
         self.columnas_a = tk.IntVar(value=2)
         self.filas_b = tk.IntVar(value=2)
         self.columnas_b = tk.IntVar(value=2)
-        self.operacion_matriz = tk.StringVar(value="Suma (A + B)")
+        self.operacion_matriz = tk.StringVar(value="")  # operación activa (resaltada)
+        self.escalar_matriz = tk.StringVar(value="2")
+        self.ayuda_matrices = tk.StringVar(value="")
+        self.botones_operacion = {}
         self.propiedad_seleccionada = tk.StringVar(value="1. Conmutatividad: A + B = B + A")
         self.filas_propiedad = tk.IntVar(value=2)
         self.columnas_propiedad = tk.IntVar(value=2)
@@ -218,6 +258,14 @@ class CalculadoraAlgebraLineal:
         estilo.map("Accent.TButton", background=[("active", self.TEAL_DARK), ("pressed", self.TEAL_DARK)])
         estilo.configure("Coral.TButton", background=self.CORAL, foreground="white", font=("Segoe UI", 10, "bold"), padding=(15, 9))
         estilo.map("Coral.TButton", background=[("active", self.CORAL_DARK), ("pressed", self.CORAL_DARK)])
+        # Botones de operación (módulo de matrices): claros por defecto, rellenos cuando están activos.
+        estilo.configure("Op.TButton", background=self.SURFACE_ALT, foreground=self.TEAL_DARK, font=("Segoe UI", 10, "bold"),
+                         padding=(8, 6), bordercolor=self.TEAL, lightcolor=self.SURFACE_ALT, darkcolor=self.SURFACE_ALT)
+        estilo.map("Op.TButton", background=[("disabled", self.BACKGROUND), ("active", self.LIGHT_GREEN)],
+                   foreground=[("disabled", self.MUTED)], bordercolor=[("disabled", self.BACKGROUND)])
+        estilo.configure("OpActive.TButton", background=self.TEAL, foreground="white", font=("Segoe UI", 10, "bold"),
+                         padding=(8, 6), bordercolor=self.TEAL_DARK)
+        estilo.map("OpActive.TButton", background=[("active", self.TEAL_DARK), ("pressed", self.TEAL_DARK)])
         estilo.configure("Sidebar.TButton", background=self.SIDEBAR, foreground=self.SIDEBAR_TEXT, font=("Segoe UI", 10), padding=(14, 11), anchor="w", borderwidth=0)
         estilo.map("Sidebar.TButton", background=[("active", self.SIDEBAR_ACTIVE), ("pressed", self.SIDEBAR_ACTIVE)], foreground=[("active", self.WHITE), ("pressed", self.WHITE)])
         estilo.configure("SidebarActive.TButton", background=self.SIDEBAR_ACTIVE, foreground=self.WHITE, font=("Segoe UI", 10, "bold"), padding=(14, 11), anchor="w", borderwidth=0)
@@ -1485,54 +1533,149 @@ class CalculadoraAlgebraLineal:
         }, ir_a_resultados=False)
 
     def construir_vista_matrices(self):
-        """Construye el módulo de operaciones matriciales manteniendo tarjetas y estilos existentes."""
+        """Construye el módulo de operaciones matriciales manteniendo tarjetas y estilos existentes.
+
+        Cada operación es un botón agrupado por categoría: un clic calcula y muestra
+        el procedimiento. Los botones se deshabilitan si las dimensiones no sirven.
+        """
         self.vista_matrices = self.nueva_vista()
-        self.vista_matrices.columnconfigure(0, weight=1)
-        self.vista_matrices.columnconfigure(1, weight=1)
-        self.vista_matrices.rowconfigure(1, weight=1)
+        self.vista_matrices.columnconfigure(0, weight=1, uniform="matrices")
+        self.vista_matrices.columnconfigure(1, weight=1, uniform="matrices")
+        self.vista_matrices.rowconfigure(1, weight=1, uniform="matrices")
 
         izquierda = Tarjeta(
-            self.vista_matrices, "Operaciones Matriciales Básicas",
-            "Suma, resta, producto por escalar y multiplicación A·B."
+            self.vista_matrices, "Operaciones Matriciales",
+            "Escriba A y B y pulse una operación: se calcula al instante."
         )
         izquierda.grid(row=0, column=0, rowspan=2, sticky="nsew", padx=(0, 10))
         derecha = Tarjeta(
             self.vista_matrices, "Resultado Matricial",
-            "Se validan automáticamente las dimensiones."
+            "Los botones inactivos indican que las dimensiones no sirven para esa operación."
         )
         derecha.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=(10, 0))
 
+        # Dimensiones: al cambiarlas se regeneran las casillas conservando lo escrito.
         config = ttk.Frame(izquierda, style="Card.TFrame")
-        config.pack(fill="x", pady=(16, 6))
+        config.pack(fill="x", pady=(12, 4))
         for col, texto, var in [
-            (0, "Filas A", self.filas_a), (2, "Columnas A", self.columnas_a),
-            (4, "Filas B", self.filas_b), (6, "Columnas B", self.columnas_b)
+            (0, "Filas A", self.filas_a), (1, "Columnas A", self.columnas_a),
+            (2, "Filas B", self.filas_b), (3, "Columnas B", self.columnas_b)
         ]:
             ttk.Label(config, text=texto, style="CardSubtitle.TLabel").grid(row=0, column=col, padx=3)
-            ttk.Spinbox(config, from_=1, to=8, textvariable=var, width=5).grid(row=1, column=col, padx=3, pady=4)
+            spin = ttk.Spinbox(config, from_=1, to=8, textvariable=var, width=5, command=self.cambiar_dimensiones_matrices)
+            spin.grid(row=1, column=col, padx=3, pady=2)
+            spin.bind("<Return>", lambda _e: self.cambiar_dimensiones_matrices())
+            spin.bind("<FocusOut>", lambda _e: self.cambiar_dimensiones_matrices())
 
-        ttk.Label(config, text="Operación", style="CardSubtitle.TLabel").grid(row=2, column=0, pady=(8, 0), sticky="w")
-        opciones = [
-            "Suma (A + B)", "Resta (A - B)", "Escalar (cA)", "Multiplicación (A · B)",
-            "Traspuesta (Aᵀ)", "Traspuesta del producto (A · B)ᵀ",
-            "Inversa por adjunta (A⁻¹)",
-        ]
-        ttk.Combobox(config, textvariable=self.operacion_matriz, values=opciones, state="readonly", width=32).grid(row=3, column=0, columnspan=5, sticky="w", pady=4)
-        ttk.Button(config, text="Generar matrices", style="Accent.TButton", command=self.generar_matrices).grid(row=3, column=6, padx=5)
+        # Botones de operación agrupados. Cada fila es un marco propio (Básicas sola, luego
+        # de dos en dos) para que el ancho de una fila no ensanche las demás.
+        operaciones = ttk.Frame(izquierda, style="Card.TFrame")
+        operaciones.pack(fill="x", pady=(6, 0))
+        self.botones_operacion = {}
+        filas_de_grupos = [[0], [1, 2], [3, 4]]
+        for indices in filas_de_grupos:
+            marco_fila = ttk.Frame(operaciones, style="Card.TFrame")
+            marco_fila.pack(fill="x", anchor="w")
+            for indice in indices:
+                self._crear_grupo_operaciones(marco_fila, *self.GRUPOS_MATRIZ[indice])
+
+        ttk.Label(
+            izquierda, textvariable=self.ayuda_matrices, style="CardSubtitle.TLabel",
+            wraplength=340, justify="left"
+        ).pack(anchor="w", pady=(6, 0))
 
         self.marco_matrices = ttk.Frame(izquierda, style="Card.TFrame")
-        self.marco_matrices.pack(fill="both", expand=True, pady=(10, 0))
-        self.marco_resultado_matriz = ttk.Frame(derecha, style="Card.TFrame")
-        self.marco_resultado_matriz.pack(fill="both", expand=True, pady=(16, 0))
-        ttk.Button(derecha, text="Calcular operación", style="Accent.TButton", command=self.operar_matriz).pack(anchor="w", pady=(14, 0))
+        self.marco_matrices.pack(fill="both", expand=True, pady=(6, 0))
 
-        # Botones para encadenar operaciones como en una calculadora.
+        # Acciones del modo calculadora, justo encima del resultado.
         acumular = ttk.Frame(derecha, style="Card.TFrame")
-        acumular.pack(fill="x", pady=(8, 0))
+        acumular.pack(fill="x", pady=(10, 0))
         ttk.Button(acumular, text="Usar resultado como A", style="Accent.TButton", command=lambda: self.usar_resultado_como("A")).pack(side="left", padx=(0, 4))
         ttk.Button(acumular, text="Usar resultado como B", style="Accent.TButton", command=lambda: self.usar_resultado_como("B")).pack(side="left", padx=4)
         ttk.Button(acumular, text="Reiniciar expresión", style="Coral.TButton", command=self.reiniciar_expresion_matrices).pack(side="left", padx=(4, 0))
+        self.marco_resultado_matriz = ttk.Frame(derecha, style="Card.TFrame")
+        self.marco_resultado_matriz.pack(fill="both", expand=True, pady=(10, 0))
         self.generar_matrices()
+
+    def _crear_grupo_operaciones(self, marco_fila, titulo, botones):
+        """Crea un grupo titulado de botones de operación dentro de una fila."""
+        grupo = ttk.Frame(marco_fila, style="Card.TFrame")
+        grupo.pack(side="left", anchor="n", padx=(0, 8), pady=(4, 2))
+        ttk.Label(grupo, text=titulo, style="CardSubtitle.TLabel").pack(anchor="w")
+        fila_botones = ttk.Frame(grupo, style="Card.TFrame")
+        fila_botones.pack(anchor="w")
+        for nombre, texto in botones:
+            boton = ttk.Button(
+                fila_botones, text=texto, style="Op.TButton", width=0,
+                command=lambda n=nombre: self.operar_matriz(n)
+            )
+            boton.pack(side="left", padx=(0, 3))
+            boton.bind("<Enter>", lambda _e, n=nombre: self._ayuda_operacion(n))
+            boton.bind("<Leave>", lambda _e: self._ayuda_operacion(self.operacion_matriz.get() or None))
+            self.botones_operacion[nombre] = boton
+            if nombre == "Escalar (cA)":
+                entrada = ttk.Entry(fila_botones, textvariable=self.escalar_matriz, width=5, justify="center")
+                entrada.pack(side="left", padx=(0, 8))
+                entrada.bind("<Return>", lambda _e: self.operar_matriz("Escalar (cA)"))
+
+    def _ayuda_operacion(self, nombre):
+        """Muestra qué hace la operación y, si está deshabilitada, por qué."""
+        if not nombre:
+            self.ayuda_matrices.set("Pase el cursor sobre una operación para ver qué matrices usa.")
+            return
+        ayuda = self.OPERACIONES_MATRIZ[nombre][2]
+        motivo = self._requisito_matriz(nombre)
+        self.ayuda_matrices.set(f"{ayuda}\n⚠ No disponible: {motivo}" if motivo else ayuda)
+
+    def _requisito_matriz(self, nombre):
+        """Devuelve por qué la operación no aplica a las dimensiones actuales, o None si aplica."""
+        try:
+            fa, ca = int(self.filas_a.get()), int(self.columnas_a.get())
+            fb, cb = int(self.filas_b.get()), int(self.columnas_b.get())
+        except (ValueError, tk.TclError):
+            return None
+        if nombre in ("Suma (A + B)", "Resta (A - B)") and (fa, ca) != (fb, cb):
+            return f"A es {fa}×{ca} y B es {fb}×{cb}; deben tener las mismas dimensiones."
+        if nombre in ("Multiplicación (A · B)", "Traspuesta del producto (A · B)ᵀ") and ca != fb:
+            return f"las columnas de A ({ca}) deben ser iguales a las filas de B ({fb})."
+        if nombre == "Determinante por Sarrus (det A)" and (fa, ca) != (3, 3):
+            return f"A es {fa}×{ca}; Sarrus solo aplica a matrices 3×3."
+        if nombre in ("Inversa por adjunta (A⁻¹)", "Inversa por Gauss-Jordan (A⁻¹)",
+                      "Determinante por cofactores (det A)",
+                      "Determinante por reducción de filas (det A)") and fa != ca:
+            return f"A es {fa}×{ca}; debe ser cuadrada."
+        if nombre == "Regla de Cramer (Ax = b)":
+            if fa != ca:
+                return f"A es {fa}×{ca}; debe ser cuadrada."
+            if fb != fa:
+                return f"B tiene {fb} filas; necesita {fa} (su primera columna es b)."
+        return None
+
+    def actualizar_botones_matrices(self):
+        """Habilita o deshabilita cada botón según las dimensiones y resalta la operación activa."""
+        activa = self.operacion_matriz.get()
+        for nombre, boton in self.botones_operacion.items():
+            boton.state(["disabled"] if self._requisito_matriz(nombre) else ["!disabled"])
+            boton.configure(style="OpActive.TButton" if nombre == activa else "Op.TButton")
+        self._ayuda_operacion(activa or None)
+
+    def cambiar_dimensiones_matrices(self):
+        """Regenera las casillas al cambiar una dimensión sin perder los valores ya escritos."""
+        try:
+            nuevas = tuple(int(v.get()) for v in (self.filas_a, self.columnas_a, self.filas_b, self.columnas_b))
+        except (ValueError, tk.TclError):
+            return  # Mientras el usuario escribe puede haber texto incompleto.
+        if not all(1 <= x <= 8 for x in nuevas):
+            return
+        actuales = (len(self.matriz_a_entries), len(self.matriz_a_entries[0]),
+                    len(self.matriz_b_entries), len(self.matriz_b_entries[0]))
+        if nuevas == actuales:
+            self.actualizar_botones_matrices()
+            return
+        texto_a = [[e.get() for e in fila] for fila in self.matriz_a_entries]
+        texto_b = [[e.get() for e in fila] for fila in self.matriz_b_entries]
+        self.generar_matrices()
+        self._rellenar_matrices(texto_a, texto_b)
 
     def crear_entradas_matriz(self, contenedor, filas, columnas, titulo):
         """Crea una cuadrícula m×n; cada casilla corresponde a una entrada a_ij."""
@@ -1574,9 +1717,9 @@ class CalculadoraAlgebraLineal:
         self.matriz_a_entries = self.crear_entradas_matriz(self.marco_matrices, fa, ca, titulo_a)
         self.matriz_b_entries = self.crear_entradas_matriz(self.marco_matrices, fb, cb, titulo_b)
         self.preparar_navegacion(self.matriz_a_entries + self.matriz_b_entries)
-        ttk.Label(self.marco_matrices, text="Para cA, el escalar se toma del campo de operación.", style="CardSubtitle.TLabel").pack(anchor="w", pady=5)
-        ttk.Label(self.marco_matrices, text="Para Aᵀ y A⁻¹ solo se usa la matriz A; B se ignora.", style="CardSubtitle.TLabel").pack(anchor="w")
-        self.mostrar_resultado_matriz("Genere las matrices, complete sus entradas y calcule.")
+        self.operacion_matriz.set("")
+        self.actualizar_botones_matrices()
+        self.mostrar_resultado_matriz("Complete las matrices y pulse una operación para ver el procedimiento.")
 
     def leer_matriz_entries(self, entries):
         """Convierte las casillas de una matriz en una lista de filas de números racionales."""
@@ -1596,19 +1739,94 @@ class CalculadoraAlgebraLineal:
         texto_widget.pack(fill="both", expand=True)
         self.text_widgets.append(texto_widget)
 
-    def operar_matriz(self):
-        """Ejecuta una operación matricial y muestra el procedimiento visual."""
-        a = self.leer_matriz_entries(self.matriz_a_entries)
-        b = self.leer_matriz_entries(self.matriz_b_entries)
-        if a is None or b is None:
+    def operar_matriz(self, op):
+        """Ejecuta la operación matricial `op` y muestra el procedimiento visual."""
+        motivo = self._requisito_matriz(op)
+        if motivo:
+            self.ayuda_matrices.set(f"⚠ No disponible: {motivo}")
+            return
+        usa_a, usa_b, _ = self.OPERACIONES_MATRIZ[op]
+        a = self.leer_matriz_entries(self.matriz_a_entries) if usa_a else None
+        b = self.leer_matriz_entries(self.matriz_b_entries) if usa_b else None
+        if (usa_a and a is None) or (usa_b and b is None):
             return
 
-        op = self.operacion_matriz.get()
         producto = None
+        sarrus = None
+        cramer = None
+        b_vector = None
         comprobacion = None
         inversa = None
+        inversa_gj = None
+        desarrollo = None
+        reduccion = None
         try:
-            if op == "Inversa por adjunta (A⁻¹)":
+            if op == "Regla de Cramer (Ax = b)":
+                b_vector = [fila[0] for fila in b]
+                cramer = resolver_cramer(a, b_vector)
+                resultado = [[x] for x in cramer["solucion"]]
+                # Comprobación: A·x debe reproducir b.
+                comprobacion = multiplicar_matrices(a, resultado)
+                titulo = "Regla de Cramer"
+                formula = "xᵢ = det(Aᵢ) / det(A),  Aᵢ = A con la columna i reemplazada por b"
+                explicacion = (
+                    "Si det(A) ≠ 0, el sistema Ax = b tiene solución única. Cada incógnita xᵢ "
+                    "es el cociente entre el determinante de Aᵢ (A con su columna i sustituida "
+                    "por b) y el determinante de A."
+                )
+            elif op == "Determinante por Sarrus (det A)":
+                sarrus = determinante_sarrus(a)
+                resultado = [[sarrus["determinante"]]]
+                comprobacion = determinante_cofactores(a)
+                titulo = "Determinante por la regla de Sarrus"
+                formula = "det(A) = (suma de diagonales ↘) − (suma de diagonales ↗)"
+                explicacion = (
+                    "Solo para matrices 3×3. Se repiten las dos primeras columnas a la derecha "
+                    "de A; se suman los productos de las tres diagonales descendentes y se "
+                    "restan los de las tres ascendentes."
+                )
+            elif op == "Determinante por reducción de filas (det A)":
+                reduccion = determinante_reduccion(a)
+                resultado = [[reduccion["determinante"]]]
+                # Comprobación con el desarrollo por cofactores.
+                comprobacion = determinante_cofactores(a)
+                titulo = "Determinante por reducción de filas"
+                formula = "det(A) = (signo) · producto de la diagonal de la triangular"
+                explicacion = (
+                    "Se lleva A a forma triangular superior con operaciones de fila. "
+                    "Intercambiar filas cambia el signo del determinante; sumar a una fila "
+                    "un múltiplo de otra no lo cambia. Al final, det(A) es el signo por el "
+                    "producto de la diagonal. Si una columna queda sin pivote, det(A) = 0."
+                )
+            elif op == "Determinante por cofactores (det A)":
+                desarrollo = desarrollo_cofactores(a)
+                # El determinante es un número; se guarda como matriz 1×1 para
+                # que el modo calculadora pueda seguir usándolo.
+                resultado = [[desarrollo["determinante"]]]
+                # Comprobación con el método de eliminación por filas.
+                comprobacion = determinante(a)
+                titulo = "Determinante por cofactores"
+                formula = "det(A) = Σ aᵢⱼ · Cᵢⱼ,   Cᵢⱼ = (−1)^(i+j)·det(Mᵢⱼ)"
+                explicacion = (
+                    "Se elige una fila (la que tiene más ceros) y se suma cada entrada "
+                    "multiplicada por su cofactor. Cada cofactor usa el determinante de un "
+                    "menor, que se calcula de la misma forma hasta llegar a matrices 2×2 "
+                    "(ad − bc). Si det(A) ≠ 0, A es invertible."
+                )
+            elif op == "Inversa por Gauss-Jordan (A⁻¹)":
+                inversa_gj = inversa_gauss_jordan(a)
+                resultado = inversa_gj["inversa"]
+                # Comprobación: A·A⁻¹ debe ser la matriz identidad.
+                comprobacion = multiplicar_matrices(a, resultado)
+                titulo = "Inversa por el método de Gauss-Jordan"
+                formula = "[A | I]  →  [I | A⁻¹]"
+                explicacion = (
+                    "Se escribe la matriz aumentada [A | I] y se aplican operaciones "
+                    "elementales de fila hasta que a la izquierda quede la identidad. "
+                    "Las mismas operaciones transforman I en A⁻¹. Si alguna columna "
+                    "no tiene pivote, A es singular y no tiene inversa."
+                )
+            elif op == "Inversa por adjunta (A⁻¹)":
                 inversa = inversa_por_adjunta(a)
                 resultado = inversa["inversa"]
                 # Comprobación: A·A⁻¹ debe ser la matriz identidad.
@@ -1627,6 +1845,14 @@ class CalculadoraAlgebraLineal:
                 explicacion = (
                     "La traspuesta convierte cada fila de A en una columna: la entrada "
                     "(i, j) pasa a la posición (j, i). Si A es m×n, Aᵀ es n×m."
+                )
+            elif op == "Traspuesta (Bᵀ)":
+                resultado = trasponer_matriz(b)
+                titulo = "Traspuesta de una matriz"
+                formula = "Bᵀ"
+                explicacion = (
+                    "La traspuesta convierte cada fila de B en una columna: la entrada "
+                    "(i, j) pasa a la posición (j, i). Si B es m×n, Bᵀ es n×m."
                 )
             elif op == "Traspuesta del producto (A · B)ᵀ":
                 producto = multiplicar_matrices(a, b)
@@ -1651,7 +1877,7 @@ class CalculadoraAlgebraLineal:
                 formula = "A − B"
                 explicacion = "Las matrices deben tener las mismas dimensiones y se restan sus componentes correspondientes."
             elif op == "Escalar (cA)":
-                c = leer_fraccion(self.escalar.get())
+                c = leer_fraccion(self.escalar_matriz.get())
                 resultado = multiplicar_matriz_escalar(a, c)
                 titulo = "Multiplicación por escalar"
                 formula = f"({formatear_numero(c)})A"
@@ -1665,7 +1891,16 @@ class CalculadoraAlgebraLineal:
                     "Cada entrada cᵢⱼ se obtiene multiplicando una fila de A por una columna de B."
                 )
         except ValueError as error:
-            titulo_error = "Matriz sin inversa" if op == "Inversa por adjunta (A⁻¹)" else "Dimensiones incompatibles"
+            if op.startswith("Inversa"):
+                titulo_error = "Matriz sin inversa"
+            elif op.startswith("Regla de Cramer"):
+                titulo_error = "Cramer no aplica"
+            elif op.startswith("Escalar"):
+                titulo_error = "Escalar inválido"
+            elif op.startswith("Determinante"):
+                titulo_error = "Determinante no definido"
+            else:
+                titulo_error = "Dimensiones incompatibles"
             messagebox.showerror(titulo_error, str(error))
             return
 
@@ -1673,10 +1908,16 @@ class CalculadoraAlgebraLineal:
         # de los datos originales, por ejemplo «(A·B)ᵀ + B».
         ea = self._envolver(self.expresion_a)
         eb = self._envolver(self.expresion_b)
-        if inversa is not None:
+        if cramer is not None:
+            expresion = f"x({ea}x = {eb})"
+        elif desarrollo is not None or reduccion is not None or sarrus is not None:
+            expresion = f"det{ea}" if ea.startswith("(") else f"det({ea})"
+        elif inversa is not None or inversa_gj is not None:
             expresion = f"{ea}⁻¹"
         elif op == "Traspuesta (Aᵀ)":
             expresion = f"{ea}ᵀ"
+        elif op == "Traspuesta (Bᵀ)":
+            expresion = f"{eb}ᵀ"
         elif op == "Traspuesta del producto (A · B)ᵀ":
             expresion = f"({ea}·{eb})ᵀ"
         elif op == "Suma (A + B)":
@@ -1689,6 +1930,8 @@ class CalculadoraAlgebraLineal:
             expresion = f"{ea}·{eb}"
         self.ultimo_resultado_matriz = resultado
         self.ultima_expresion = expresion
+        self.operacion_matriz.set(op)
+        self.actualizar_botones_matrices()
 
         for widget in self.marco_resultado_matriz.winfo_children():
             widget.destroy()
@@ -1699,11 +1942,14 @@ class CalculadoraAlgebraLineal:
         )
         fila = ttk.Frame(datos, style="Card.TFrame")
         fila.pack(fill="x", pady=6)
-        usa_b = op not in ("Escalar (cA)", "Traspuesta (Aᵀ)", "Inversa por adjunta (A⁻¹)")
-        crear_matriz_visual(
-            fila, a, len(a[0])
-        ).pack(side="left", padx=(0, 18))
-        if usa_b:
+        if usa_a:
+            crear_matriz_visual(
+                fila, a, len(a[0])
+            ).pack(side="left", padx=(0, 18))
+        if cramer is not None:
+            # En Cramer solo interviene el vector b (primera columna de B).
+            crear_matriz_visual(fila, [[x] for x in b_vector], 1).pack(side="left")
+        elif usa_b:
             crear_matriz_visual(
                 fila, b, len(b[0])
             ).pack(side="left")
@@ -1717,8 +1963,20 @@ class CalculadoraAlgebraLineal:
             self._mostrar_pasos_producto(paso, a, b, resultado)
         elif inversa is not None:
             self._mostrar_pasos_inversa(interior, paso, a, inversa, comprobacion)
+        elif inversa_gj is not None:
+            self._mostrar_pasos_inversa_gj(interior, paso, inversa_gj["pasos"], len(a), comprobacion)
+        elif cramer is not None:
+            self._mostrar_pasos_cramer(interior, paso, a, b_vector, cramer, comprobacion)
+        elif sarrus is not None:
+            self._mostrar_pasos_sarrus(interior, paso, a, sarrus, comprobacion)
+        elif desarrollo is not None:
+            self._mostrar_pasos_determinante(interior, paso, a, desarrollo, comprobacion)
+        elif reduccion is not None:
+            self._mostrar_pasos_det_reduccion(interior, paso, reduccion, comprobacion)
         elif op == "Traspuesta (Aᵀ)":
             self._mostrar_pasos_traspuesta(paso, a, "A", "Aᵀ")
+        elif op == "Traspuesta (Bᵀ)":
+            self._mostrar_pasos_traspuesta(paso, b, "B", "Bᵀ")
         elif producto is not None:
             self._mostrar_pasos_producto(paso, a, b, producto)
             crear_matriz_visual(
@@ -1764,8 +2022,10 @@ class CalculadoraAlgebraLineal:
             final, resultado, len(resultado[0])
         ).pack(anchor="center", pady=6)
 
-        metricas = [("Expresión", expresion), ("Dimensión A", f"{len(a)}×{len(a[0])}")]
-        if usa_b:
+        metricas = [("Expresión", expresion)]
+        if usa_a:
+            metricas.append(("Dimensión A", f"{len(a)}×{len(a[0])}"))
+        if usa_b and cramer is None:
             metricas.append(("Dimensión B", f"{len(b)}×{len(b[0])}"))
         if producto is not None:
             metricas.append(("Dimensión A·B", f"{len(producto)}×{len(producto[0])}"))
@@ -1773,10 +2033,37 @@ class CalculadoraAlgebraLineal:
         if inversa is not None:
             metricas.append(("det(A)", formatear_numero(inversa["determinante"])))
             metricas.append(("A·A⁻¹ = I", "Verificada" if self._es_identidad(comprobacion) else "No coincide"))
+        elif cramer is not None:
+            metricas.append(("det(A)", formatear_numero(cramer["determinante"])))
+            metricas.append(("Solución x", "(" + ", ".join(formatear_numero(x) for x in cramer["solucion"]) + ")"))
+            metricas.append(("A·x = b", "Verificada" if [fila[0] for fila in comprobacion] == b_vector else "No coincide"))
+        elif sarrus is not None:
+            det = sarrus["determinante"]
+            metricas.append(("det(A)", formatear_numero(det)))
+            metricas.append(("¿Invertible?", "Sí (det ≠ 0)" if det != 0 else "No (det = 0)"))
+            metricas.append(("Comprobación por cofactores", "Coincide" if comprobacion == det else "No coincide"))
+        elif desarrollo is not None:
+            det = desarrollo["determinante"]
+            metricas.append(("det(A)", formatear_numero(det)))
+            metricas.append(("Fila de desarrollo", desarrollo["fila"] + 1))
+            metricas.append(("¿Invertible?", "Sí (det ≠ 0)" if det != 0 else "No (det = 0)"))
+            metricas.append(("Comprobación por eliminación", "Coincide" if comprobacion == det else "No coincide"))
+        elif reduccion is not None:
+            det = reduccion["determinante"]
+            intercambios = sum(1 for p in reduccion["pasos"] if p["titulo"] == "Intercambio de filas")
+            metricas.append(("det(A)", formatear_numero(det)))
+            metricas.append(("Intercambios de filas", intercambios))
+            metricas.append(("¿Invertible?", "Sí (det ≠ 0)" if det != 0 else "No (det = 0)"))
+            metricas.append(("Comprobación por cofactores", "Coincide" if comprobacion == det else "No coincide"))
+        elif inversa_gj is not None:
+            # Se descuentan el paso inicial [A | I] y el resumen final [I | A⁻¹].
+            metricas.append(("Operaciones de fila", len(inversa_gj["pasos"]) - 2))
+            metricas.append(("A·A⁻¹ = I", "Verificada" if self._es_identidad(comprobacion) else "No coincide"))
         elif comprobacion is not None:
             metricas.append(("(A·B)ᵀ = BᵀAᵀ", "Verificada" if comprobacion == resultado else "No coincide"))
 
-        pasos_visuales = [{"titulo": "Datos de entrada", "matriz": a, "numero_variables": len(a[0])}]
+        entrada = a if usa_a else b
+        pasos_visuales = [{"titulo": "Datos de entrada", "matriz": entrada, "numero_variables": len(entrada[0])}]
         if producto is not None:
             pasos_visuales.append({"titulo": "Producto A·B", "matriz": producto, "numero_variables": len(producto[0])})
         pasos_visuales.append({"titulo": "Resultado", "matriz": resultado, "numero_variables": len(resultado[0])})
@@ -1827,7 +2114,7 @@ class CalculadoraAlgebraLineal:
 
         self.mostrar_resultado_matriz(
             f"Resultado cargado en {destino}:  {destino} = {self.ultima_expresion}\n\n"
-            "Elija la siguiente operación y presione «Calcular operación»."
+            "Elija la siguiente operación."
         )
 
     def _rellenar_matrices(self, texto_a, texto_b):
@@ -1902,7 +2189,209 @@ class CalculadoraAlgebraLineal:
         )
         crear_matriz_visual(paso4, inversa["inversa"], n).pack(anchor="center", pady=6)
 
-        # Comprobación: A·A⁻¹ = I.
+        self._mostrar_comprobacion_identidad(interior, comprobacion, n)
+
+    def _mostrar_pasos_determinante(self, interior, paso, a, desarrollo, comprobacion):
+        """Muestra det(A) por cofactores: fila elegida, un término por columna y la suma."""
+        f = desarrollo["fila"]
+        det = desarrollo["determinante"]
+        n = len(a)
+
+        # Paso 1: fila elegida.
+        if n == 1:
+            texto_fila = "Matriz 1×1: el determinante es su única entrada."
+        else:
+            ceros = sum(1 for x in a[f] if x == 0)
+            texto_fila = f"Se desarrolla por la fila {f + 1}"
+            texto_fila += f" porque tiene más ceros ({ceros})." if ceros else " (ninguna fila tiene ceros)."
+        ttk.Label(paso, text=texto_fila, style="Operation.TLabel", wraplength=650).pack(anchor="w", pady=(4, 2))
+
+        # Paso 2: un término por cada entrada de la fila.
+        if n > 1:
+            for t in desarrollo["terminos"]:
+                i, j = f + 1, t["columna"] + 1
+                tarjeta = self._agregar_seccion_analisis(interior, f"Término a{i},{j} · C{i},{j}")
+                if t["det_menor"] is None:
+                    ttk.Label(
+                        tarjeta, text=f"a{i},{j} = 0  →  el término vale 0; no hace falta calcular su menor.",
+                        style="AnalysisBody.TLabel",
+                    ).pack(anchor="w")
+                    continue
+                crear_matriz_visual(tarjeta, t["menor"], len(t["menor"][0])).pack(anchor="center", pady=4)
+                if len(t["menor"]) == 2:
+                    (p, q), (r, s) = t["menor"]
+                    ttk.Label(
+                        tarjeta,
+                        text=(f"det(M{i},{j}) = ({formatear_numero(p)})({formatear_numero(s)}) − "
+                              f"({formatear_numero(q)})({formatear_numero(r)}) = {formatear_numero(t['det_menor'])}"),
+                        style="AnalysisBody.TLabel",
+                    ).pack(anchor="w")
+                ttk.Label(
+                    tarjeta,
+                    text=(f"a{i},{j}·C{i},{j} = ({formatear_numero(t['valor'])})·(−1)^({i}+{j})·det(M{i},{j}) = "
+                          f"({formatear_numero(t['valor'])})({t['signo']})({formatear_numero(t['det_menor'])}) = "
+                          f"{formatear_numero(t['producto'])}"),
+                    style="Operation.TLabel", wraplength=650,
+                ).pack(anchor="w", pady=(4, 0))
+
+            # Paso 3: suma de los términos.
+            suma = " + ".join(f"({formatear_numero(t['producto'])})" for t in desarrollo["terminos"])
+            total = self._agregar_seccion_analisis(interior, "Suma de los términos")
+            ttk.Label(
+                total, text=f"det(A) = {suma} = {formatear_numero(det)}",
+                style="Operation.TLabel", wraplength=650,
+            ).pack(anchor="w")
+
+        self._mostrar_comprobacion_determinante(interior, det, comprobacion, "reducción de filas")
+
+    def _mostrar_pasos_det_reduccion(self, interior, paso, reduccion, comprobacion):
+        """Muestra det(A) por reducción de filas: cada operación, su efecto en el
+        determinante y el producto final de la diagonal."""
+        det = reduccion["determinante"]
+        pasos = reduccion["pasos"]
+
+        ttk.Label(
+            paso, text="Se lleva A a forma triangular superior (ceros debajo de la diagonal).",
+            style="Operation.TLabel", wraplength=650,
+        ).pack(anchor="w", pady=(4, 2))
+        crear_matriz_visual(paso, pasos[0]["matriz"]).pack(anchor="center", pady=6)
+
+        for numero, datos in enumerate(pasos[1:], start=2):
+            tarjeta = self._agregar_seccion_analisis(
+                interior, f"Paso {numero} — {datos['titulo']}", datos["operacion"]
+            )
+            if datos["nota"]:
+                ttk.Label(
+                    tarjeta, text=datos["nota"], style="AnalysisBody.TLabel", wraplength=650,
+                ).pack(anchor="w", pady=(0, 4))
+            crear_matriz_visual(tarjeta, datos["matriz"]).pack(anchor="center", pady=6)
+
+        final = self._agregar_seccion_analisis(interior, "Producto de la diagonal")
+        if reduccion["diagonal"] is None:
+            texto = "Una columna quedó sin pivote, por lo que det(A) = 0."
+        else:
+            factores = "".join(f"({formatear_numero(x)})" for x in reduccion["diagonal"])
+            texto = f"det(A) = ({reduccion['signo']})·{factores} = {formatear_numero(det)}"
+        ttk.Label(final, text=texto, style="Operation.TLabel", wraplength=650).pack(anchor="w")
+
+        self._mostrar_comprobacion_determinante(interior, det, comprobacion, "cofactores")
+
+    def _mostrar_comprobacion_determinante(self, interior, det, otro, otro_metodo):
+        """Compara det(A) con el obtenido por el otro método e indica si A es invertible."""
+        coincide = otro == det
+        comp = self._agregar_seccion_analisis(
+            interior, f"Comprobación — {otro_metodo}",
+            f"Calculado por {otro_metodo}: det(A) = {formatear_numero(otro)}."
+        )
+        ttk.Label(
+            comp,
+            text="✓ Ambos métodos dan el mismo determinante." if coincide else "✗ Los métodos no coinciden.",
+            style="Status.TLabel" if coincide else "StatusBad.TLabel",
+            padding=8,
+        ).pack(anchor="w", pady=(4, 0))
+        ttk.Label(
+            comp,
+            text="det(A) ≠ 0 → A es invertible." if det != 0 else "det(A) = 0 → A es singular (no tiene inversa).",
+            style="AnalysisBody.TLabel",
+        ).pack(anchor="w", pady=(6, 0))
+
+    @staticmethod
+    def _sub(numero):
+        """Escribe un entero como subíndice (1 → ₁) para x₁, A₂, ..."""
+        return str(numero).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
+
+    def _mostrar_pasos_sarrus(self, interior, paso, a, sarrus, comprobacion):
+        """Muestra Sarrus: A con dos columnas repetidas, productos de cada diagonal y la resta."""
+        ttk.Label(
+            paso, text="Se repiten las dos primeras columnas a la derecha de A:",
+            style="Operation.TLabel", wraplength=650,
+        ).pack(anchor="w", pady=(4, 2))
+        crear_matriz_visual(paso, [fila + fila[:2] for fila in a], 3).pack(anchor="center", pady=6)
+
+        grupos = [
+            ("Diagonales descendentes ↘ (se suman)", "principales", "prod_principales", "suma_principales"),
+            ("Diagonales ascendentes ↗ (se restan)", "secundarias", "prod_secundarias", "suma_secundarias"),
+        ]
+        for titulo, claves, productos, suma in grupos:
+            tarjeta = self._agregar_seccion_analisis(interior, titulo)
+            for entradas, producto in zip(sarrus[claves], sarrus[productos]):
+                factores = "".join(f"({formatear_numero(x)})" for x in entradas)
+                ttk.Label(
+                    tarjeta, text=f"{factores} = {formatear_numero(producto)}",
+                    style="AnalysisBody.TLabel",
+                ).pack(anchor="w", pady=1)
+            ttk.Label(
+                tarjeta,
+                text="Suma = " + " + ".join(f"({formatear_numero(p)})" for p in sarrus[productos])
+                     + f" = {formatear_numero(sarrus[suma])}",
+                style="Operation.TLabel", wraplength=650,
+            ).pack(anchor="w", pady=(4, 0))
+
+        total = self._agregar_seccion_analisis(interior, "Resultado")
+        ttk.Label(
+            total,
+            text=(f"det(A) = {formatear_numero(sarrus['suma_principales'])} − "
+                  f"({formatear_numero(sarrus['suma_secundarias'])}) = {formatear_numero(sarrus['determinante'])}"),
+            style="Operation.TLabel", wraplength=650,
+        ).pack(anchor="w")
+
+        self._mostrar_comprobacion_determinante(interior, sarrus["determinante"], comprobacion, "cofactores")
+
+    def _mostrar_pasos_cramer(self, interior, paso, a, b_vector, cramer, comprobacion):
+        """Muestra Cramer: det(A), cada Aᵢ con su determinante y xᵢ, y la comprobación A·x = b."""
+        det = cramer["determinante"]
+        ttk.Label(
+            paso, text=f"det(A) = {formatear_numero(det)} ≠ 0  →  el sistema tiene solución única.",
+            style="Operation.TLabel", wraplength=650,
+        ).pack(anchor="w", pady=(4, 2))
+
+        for datos in cramer["pasos"]:
+            i = datos["columna"] + 1
+            tarjeta = self._agregar_seccion_analisis(
+                interior, f"Paso {i + 1} — x{self._sub(i)} = det(A{self._sub(i)}) / det(A)",
+                f"A{self._sub(i)} es A con la columna {i} reemplazada por b."
+            )
+            crear_matriz_visual(tarjeta, datos["matriz"], len(a)).pack(anchor="center", pady=6)
+            ttk.Label(
+                tarjeta,
+                text=(f"det(A{self._sub(i)}) = {formatear_numero(datos['determinante'])}   →   "
+                      f"x{self._sub(i)} = {formatear_numero(datos['determinante'])} / {formatear_numero(det)} "
+                      f"= {formatear_numero(datos['x'])}"),
+                style="Operation.TLabel", wraplength=650,
+            ).pack(anchor="w")
+
+        coincide = [fila[0] for fila in comprobacion] == b_vector
+        comp = self._agregar_seccion_analisis(
+            interior, "Comprobación — A·x = b",
+            "Se multiplica A por la solución encontrada y se compara con b."
+        )
+        crear_matriz_visual(comp, comprobacion, 1).pack(anchor="center", pady=6)
+        ttk.Label(
+            comp,
+            text="✓ A·x coincide con b." if coincide else "✗ A·x no coincide con b.",
+            style="Status.TLabel" if coincide else "StatusBad.TLabel",
+            padding=8,
+        ).pack(anchor="w", pady=(4, 0))
+
+    def _mostrar_pasos_inversa_gj(self, interior, paso, pasos, n, comprobacion):
+        """Muestra Gauss-Jordan sobre [A | I]: una tarjeta por operación de fila."""
+        ttk.Label(
+            paso, text="Se reduce [A | I] hasta que la parte izquierda sea la identidad.",
+            style="Operation.TLabel",
+        ).pack(anchor="w", pady=(4, 2))
+        # Pasando numero_variables = n, la barra «│» separa A de I.
+        crear_matriz_visual(paso, pasos[0]["matriz"], n).pack(anchor="center", pady=6)
+
+        for numero, datos in enumerate(pasos[1:], start=2):
+            tarjeta = self._agregar_seccion_analisis(
+                interior, f"Paso {numero} — {datos['titulo']}", datos["operacion"]
+            )
+            crear_matriz_visual(tarjeta, datos["matriz"], n).pack(anchor="center", pady=6)
+
+        self._mostrar_comprobacion_identidad(interior, comprobacion, n)
+
+    def _mostrar_comprobacion_identidad(self, interior, comprobacion, n):
+        """Tarjeta final de ambas inversas: comprueba que A·A⁻¹ = I."""
         es_identidad = self._es_identidad(comprobacion)
         comp = self._agregar_seccion_analisis(
             interior, "Comprobación — A·A⁻¹ = I",

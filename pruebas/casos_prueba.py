@@ -12,6 +12,7 @@ from algoritmos.eliminacion_gaussiana import (
     eliminacion_gaussiana,
     es_homogeneo,
     gauss_jordan,
+    inversa_gauss_jordan,
     obtener_clasificacion,
     resolver_solucion_unica,
     verificar_solucion,
@@ -24,6 +25,11 @@ from algoritmos.matrices import (
     sumar_matrices,
     trasponer_matriz,
     determinante,
+    determinante_cofactores,
+    determinante_reduccion,
+    determinante_sarrus,
+    resolver_cramer,
+    desarrollo_cofactores,
     inversa_por_adjunta,
     matriz_adjunta,
     matriz_cofactores,
@@ -186,6 +192,64 @@ def ejecutar_casos():
         except ValueError:
             pass
     print("✓ Inversa por adjunta: det, cofactores, adj(A) = Cᵀ, A·A⁻¹ = I y casos sin inversa")
+
+    # Inversa por Gauss-Jordan: [A | I] → [I | A⁻¹]; debe coincidir con la adjunta.
+    assert inversa_gauss_jordan(A_2)["inversa"] == [[3, -1], [-5, 2]]
+    gj_3 = inversa_gauss_jordan(A_3)
+    assert gj_3["inversa"] == inversa_por_adjunta(A_3)["inversa"]
+    assert multiplicar_matrices(A_3, gj_3["inversa"]) == identidad_3
+    assert [fila[:3] for fila in gj_3["aumentada_final"]] == identidad_3
+    assert any("÷" in paso["operacion"] for paso in gj_3["pasos"])
+    assert inversa_gauss_jordan(A_frac)["inversa"] == inversa_por_adjunta(A_frac)["inversa"]
+    assert inversa_gauss_jordan([[Fraction(4)]])["inversa"] == [[Fraction(1, 4)]]
+    for sin_inversa in ([[Fraction(1), Fraction(2)], [Fraction(2), Fraction(4)]],
+                        [[Fraction(1), Fraction(2), Fraction(3)]]):
+        try:
+            inversa_gauss_jordan(sin_inversa)
+            raise AssertionError("Debió rechazar una matriz sin inversa.")
+        except ValueError:
+            pass
+    print("✓ Inversa por Gauss-Jordan: [I | A⁻¹], coincide con la adjunta y rechaza singulares")
+
+    # Determinante por cofactores (Laplace): debe coincidir con el de eliminación.
+    assert determinante_cofactores([[Fraction(7)]]) == 7
+    assert determinante_cofactores(A_2) == 1
+    assert determinante_cofactores(A_3) == 1
+    A_4 = [
+        [Fraction(1, 2), Fraction(0), Fraction(2), Fraction(-1)],
+        [Fraction(3), Fraction(1), Fraction(0), Fraction(4)],
+        [Fraction(0), Fraction(0), Fraction(5), Fraction(1, 3)],
+        [Fraction(2), Fraction(-1), Fraction(1), Fraction(0)],
+    ]
+    assert determinante_cofactores(A_4) == determinante(A_4)
+    assert determinante_cofactores([[Fraction(1), Fraction(2)], [Fraction(2), Fraction(4)]]) == 0
+    desarrollo = desarrollo_cofactores(A_3)
+    assert desarrollo["fila"] == 1  # la fila 2 (0, 1, 4) tiene un cero
+    assert desarrollo["terminos"][0]["det_menor"] is None  # a₂₁ = 0: no se calcula su menor
+    assert sum(t["producto"] for t in desarrollo["terminos"]) == desarrollo["determinante"] == 1
+    try:
+        desarrollo_cofactores([[Fraction(1), Fraction(2), Fraction(3)]])
+        raise AssertionError("Debió rechazar una matriz no cuadrada.")
+    except ValueError:
+        pass
+    print("✓ Determinante por cofactores: 1×1 a 4×4, fila con más ceros y coincide con eliminación")
+
+    # Determinante por reducción de filas: triangular, signo por intercambios y pasos.
+    red_3 = determinante_reduccion(A_3)
+    assert red_3["determinante"] == 1 == determinante_cofactores(A_3)
+    assert all(red_3["triangular"][i][j] == 0 for i in range(3) for j in range(i))
+    assert determinante_reduccion(A_4)["determinante"] == determinante_cofactores(A_4)
+    con_intercambio = determinante_reduccion([[Fraction(0), Fraction(1)], [Fraction(1), Fraction(0)]])
+    assert con_intercambio["determinante"] == -1 and con_intercambio["signo"] == -1
+    assert any(p["titulo"] == "Intercambio de filas" for p in con_intercambio["pasos"])
+    singular = determinante_reduccion([[Fraction(1), Fraction(2)], [Fraction(2), Fraction(4)]])
+    assert singular["determinante"] == 0 and singular["diagonal"] is None
+    try:
+        determinante_reduccion([[Fraction(1), Fraction(2), Fraction(3)]])
+        raise AssertionError("Debió rechazar una matriz no cuadrada.")
+    except ValueError:
+        pass
+    print("✓ Determinante por reducción de filas: triangular, signo por intercambios y coincide con cofactores")
     print("✓ Matrices: validación de dimensiones incompatibles correcta")
 
     # Fracciones exactas.
@@ -223,6 +287,38 @@ def ejecutar_casos():
     combinado_ex3 = [sum(v_ex3[j] * columnas_ex3[j][i] for j in range(3)) for i in range(3)]
     assert combinado_ex3 == producto_ex3
     print("✓ I Corte: A·v y combinación lineal de columnas correctas")
+
+    # Regla de Sarrus (3×3) y regla de Cramer.
+    F = Fraction
+    m3 = [[F(2), F(0), F(1)], [F(1), F(3), F(2)], [F(1), F(1), F(1)]]
+    sarrus = determinante_sarrus(m3)
+    assert sarrus["determinante"] == determinante_cofactores(m3) == F(0)
+    m3b = [[F(1), F(2), F(3)], [F(0), F(1), F(4)], [F(5), F(6), F(0)]]
+    assert determinante_sarrus(m3b)["determinante"] == determinante_cofactores(m3b) == F(1)
+    for invalida in ([[F(1), F(2)], [F(3), F(4)]], [[F(i + j) for j in range(4)] for i in range(4)]):
+        try:
+            determinante_sarrus(invalida)
+            raise AssertionError("Sarrus debía rechazar una matriz que no es 3×3")
+        except ValueError:
+            pass
+    print("✓ Regla de Sarrus correcta y coincide con cofactores")
+
+    cramer2 = resolver_cramer([[F(2), F(1)], [F(1), F(3)]], [F(5), F(10)])
+    assert cramer2["solucion"] == [F(1), F(3)]
+    a_c = [[F(2), F(1), F(-1)], [F(-3), F(-1), F(2)], [F(-2), F(1), F(2)]]
+    b_c = [F(8), F(-11), F(-3)]
+    cramer3 = resolver_cramer(a_c, b_c)
+    assert cramer3["solucion"] == [F(2), F(3), F(-1)]
+    assert multiplicar_matriz_vector(a_c, cramer3["solucion"]) == b_c
+    for a_mala, b_mala in (([[F(1), F(2)], [F(2), F(4)]], [F(1), F(2)]),
+                           ([[F(1), F(2), F(3)], [F(4), F(5), F(6)]], [F(1), F(2)]),
+                           ([[F(1), F(0)], [F(0), F(1)]], [F(1)])):
+        try:
+            resolver_cramer(a_mala, b_mala)
+            raise AssertionError("Cramer debía rechazar este sistema")
+        except ValueError:
+            pass
+    print("✓ Regla de Cramer correcta y valida det=0, no cuadrada y b incompatible")
 
 
 if __name__ == "__main__":

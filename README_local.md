@@ -50,12 +50,17 @@ Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz d
   6. r(sA) = (rs)A
   7. A(u + v) = Au + Av
   8. A(cu) = c(Au)
+  9. A·B = B·A (contraejemplo: el producto de matrices no es conmutativo, por lo que la igualdad normalmente no se cumple)
 - El selector de propiedades permite cambiar de una propiedad a otra conservando las mismas matrices y vectores cargados.
 - El resultado muestra ambos lados de la igualdad y las dependencias de dimensiones/componentes requeridas.
 - Operaciones matriciales:
   - suma y resta con validación de dimensiones;
   - multiplicación por escalar;
-  - multiplicación A·B con validación columnas(A)=filas(B).
+  - multiplicación A·B con validación columnas(A)=filas(B);
+  - traspuesta de A, traspuesta de B y traspuesta del producto (A·B)ᵀ;
+  - inversa por el método de la adjunta y por Gauss-Jordan;
+  - determinante por cofactores y por reducción de filas;
+  - modo calculadora para seguir operando con el resultado anterior.
 - Evaluación y resolución de sistemas Ax=b.
 - Eliminación de Gauss y visualización paso a paso.
 - Aritmética exacta con `Fraction`.
@@ -66,25 +71,30 @@ El programa utiliza únicamente Python estándar y Tkinter/ttk. No utiliza NumPy
 ### Estructura
 
 ```text
-Programa1_Grupo4/
+Algebra_calculadora.py/
 ├── main.py
 ├── algoritmos/
+│   ├── dependencia_lineal.py
 │   ├── eliminacion_gaussiana.py
 │   ├── matrices.py
 │   └── vectores.py
 ├── interfaces/
 │   ├── componentes/tarjeta.py
+│   ├── ventana_matriz.py
 │   ├── ventana_principal.py
 │   └── ventana_proceso.py
 ├── modelos/
+│   └── sistema_ecuaciones.py
 ├── utilidades/
+│   ├── formato.py
+│   └── fracciones.py
 └── pruebas/
     └── casos_prueba.py
 ```
 
 ## Ejecución en PyCharm
 
-1. Abrir la carpeta `Programa1_Grupo4` como proyecto.
+1. Abrir la carpeta del proyecto (la que contiene `main.py`) como proyecto.
 2. Abrir `main.py`.
 3. Ejecutar con el botón ▶ Run.
 4. Desde la barra lateral se puede entrar a Entrada de Matriz, Proceso Gaussiano, Operaciones de Vectores y Operaciones Matriciales.
@@ -95,7 +105,7 @@ También se pueden ejecutar las pruebas desde la terminal de PyCharm:
 python -m pruebas.casos_prueba
 ```
 
-Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, operaciones matriciales, dimensiones incompatibles y fracciones exactas.
+Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, dependencia lineal (forma reducida, pivotes, variables libres y relación no trivial), clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversa por adjunta y por Gauss-Jordan, determinante por cofactores y por reducción de filas, dimensiones incompatibles y fracciones exactas.
 
 
 ### Funciones añadidas para el I Corte
@@ -129,3 +139,44 @@ El trabajo consiste en mejorar la documentación interna del proyecto mediante e
 Se conserva la estructura, la lógica matemática y la interfaz de la calculadora desarrollada anteriormente. El objetivo es facilitar la lectura, comprensión, mantenimiento y revisión del código, sin introducir operaciones matemáticas nuevas.
 
 La entrega incluye el código documentado, las pruebas correspondientes y el informe en PDF con las evidencias solicitadas por la docente.
+
+## Ampliaciones posteriores al Programa 5
+
+Funciones agregadas después de la documentación del Programa 5. Todas usan únicamente listas, bucles y `Fraction`; no se utilizan NumPy, SciPy ni funciones de álgebra lineal de `math`.
+
+### Dependencia lineal
+- El veredicto indica explícitamente **L.I. o L.D.** y si el sistema es **homogéneo o heterogéneo** (`es_homogeneo` en `eliminacion_gaussiana.py`).
+- La reducción usa Gauss-Jordan, por lo que la salida es la **matriz escalonada reducida**.
+- Se muestran por nombre las variables básicas y libres (por ejemplo, «Variables libres: 1 (c₃)»).
+- La relación no trivial se escribe como en papel: `v₁ − 2v₂ + v₃ = 0`.
+- La clasificación homogéneo/heterogéneo también aparece en combinación lineal (V·c = b) y en sistemas Ax = b.
+
+### Operaciones matriciales
+- **Traspuesta (Aᵀ)** y **Traspuesta (Bᵀ)**: cada fila se convierte en columna; si la matriz es m×n, su traspuesta es n×m (`trasponer_matriz` en `matrices.py`).
+- **Traspuesta del producto (A·B)ᵀ**: calcula A·B, lo traspone y comprueba la propiedad (A·B)ᵀ = BᵀAᵀ.
+- **Inversa por adjunta (A⁻¹)**: determinante, matriz de cofactores Cᵢⱼ = (−1)^(i+j)·det(Mᵢⱼ), adjunta adj(A) = Cᵀ y A⁻¹ = (1/det A)·adj(A) (`inversa_por_adjunta` en `matrices.py`).
+- **Inversa por Gauss-Jordan (A⁻¹)**: reduce la matriz aumentada [A | I] hasta [I | A⁻¹] mostrando cada operación de fila (`inversa_gauss_jordan` en `eliminacion_gaussiana.py`).
+- Ambas inversas terminan con la comprobación A·A⁻¹ = I y avisan cuando la matriz es singular (det = 0) o no es cuadrada.
+- **Determinante por cofactores (det A)**: desarrollo de Laplace por la fila con más ceros; muestra cada término aᵢⱼ·(−1)^(i+j)·det(Mᵢⱼ), los menores 2×2 como ad − bc, la suma final y una comprobación con el método de reducción de filas (`determinante_cofactores` y `desarrollo_cofactores` en `matrices.py`). Indica si A es invertible.
+- **Determinante por reducción de filas (det A)**: lleva A a forma triangular superior mostrando cada operación y su efecto (intercambiar filas cambia el signo; sumar un múltiplo de otra fila no lo cambia); det(A) = signo · producto de la diagonal. Se comprueba con el desarrollo por cofactores (`determinante_reduccion` en `matrices.py`).
+
+### Modo calculadora
+- Botones **«Usar resultado como A»** y **«Usar resultado como B»**: copian el último resultado a la matriz elegida y ajustan sus dimensiones automáticamente.
+- El título de cada matriz muestra la expresión acumulada, por ejemplo «Matriz A = (A·B)ᵀ», para encadenar operaciones como en una calculadora convencional.
+- **«Reiniciar expresión»** vuelve a los nombres A y B sin borrar los valores.
+
+### Correcciones
+- Los módulos de Vectores, Matrices, Matriz por Vector y Propiedades ya no saltan automáticamente a «Análisis de Resultados».
+- En Propiedades se eliminó un texto repetido y se agregó la propiedad 9 (A·B = B·A) como contraejemplo.
+- Gauss ya no muestra el paso innecesario de dividir una fila entre 1.
+
+### Regla de Sarrus y regla de Cramer
+- **Determinante por Sarrus (det A)**: solo para matrices 3×3. Se repiten las dos primeras columnas, se suman los productos de las tres diagonales descendentes y se restan los de las tres ascendentes; se comprueba contra el desarrollo por cofactores (`determinante_sarrus` en `matrices.py`).
+- **Regla de Cramer (Ax = b)**: para A cuadrada con det(A) ≠ 0 calcula xᵢ = det(Aᵢ)/det(A), donde Aᵢ es A con la columna i reemplazada por b (la primera columna de B). Muestra cada Aᵢ y su determinante y comprueba A·x = b (`resolver_cramer` en `matrices.py`). Avisa si det(A) = 0, si A no es cuadrada o si b no tiene la longitud correcta.
+
+### Rediseño del módulo de Operaciones Matriciales
+- Las operaciones pasan de un menú desplegable a **botones agrupados** (Básicas, Traspuesta, Inversa, Determinante, Sistema Ax = b); un clic calcula, ya no existe «Calcular operación» ni «Generar matrices».
+- Los botones se deshabilitan según las dimensiones de A y B, la operación activa se resalta y una línea de ayuda explica qué matrices usa cada operación y por qué no está disponible.
+- Al cambiar las dimensiones se conservan los valores ya escritos.
+- c·A tiene su propio campo de escalar (antes compartía el del módulo de Vectores).
+- Los botones del modo calculadora quedaron encima del resultado.
