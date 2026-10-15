@@ -1,4 +1,4 @@
-# Programa 5 - Calculadora de Álgebra Lineal
+# Calculadora de Álgebra Lineal (Programa 5 y ampliaciones posteriores)
 ## Grupo 4 - Universidad Americana
 
 Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz del Programa 1. Se conservaron Tkinter/ttk, la distribución por tarjetas, colores, tipografías y navegación visual, agregando las funciones solicitadas en el Programa 4.
@@ -41,7 +41,7 @@ Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz d
 - Evaluación de combinación lineal mediante el sistema equivalente Vc=b.
 - Análisis de dependencia e independencia lineal de los vectores, incluyendo una relación no trivial cuando existe.
 - Producto matriz–vector A·v con validación de dimensiones.
-- Módulo de las 8 propiedades algebraicas solicitadas:
+- Módulo de las 9 propiedades algebraicas (las 8 solicitadas más el contraejemplo de A·B = B·A):
   1. A + B = B + A
   2. (A + B) + C = A + (B + C)
   3. A + 0 = A
@@ -59,7 +59,9 @@ Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz d
   - multiplicación A·B con validación columnas(A)=filas(B);
   - traspuesta de A, traspuesta de B y traspuesta del producto (A·B)ᵀ;
   - inversa por el método de la adjunta y por Gauss-Jordan;
-  - determinante por cofactores y por reducción de filas;
+  - determinante por cofactores, por reducción de filas y por la regla de Sarrus (solo 3×3);
+  - resolución de Ax = b por la regla de Cramer;
+  - botones que se deshabilitan cuando las dimensiones no son válidas;
   - modo calculadora para seguir operando con el resultado anterior.
 - Evaluación y resolución de sistemas Ax=b.
 - Eliminación de Gauss y visualización paso a paso.
@@ -105,7 +107,7 @@ También se pueden ejecutar las pruebas desde la terminal de PyCharm:
 python -m pruebas.casos_prueba
 ```
 
-Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, dependencia lineal (forma reducida, pivotes, variables libres y relación no trivial), clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversa por adjunta y por Gauss-Jordan, determinante por cofactores y por reducción de filas, dimensiones incompatibles y fracciones exactas.
+Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, dependencia lineal (forma reducida, pivotes, variables libres y relación no trivial), clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversa por adjunta y por Gauss-Jordan, determinante por cofactores, por reducción de filas y por Sarrus, regla de Cramer, dimensiones incompatibles y fracciones exactas.
 
 
 ### Funciones añadidas para el I Corte
