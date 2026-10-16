@@ -44,9 +44,15 @@ from algoritmos.vectores import (
     sumar_vectores,
 )
 from interfaces.componentes.tarjeta import Tarjeta
+from interfaces.vista_lu import VistaLU
 from interfaces.ventana_proceso import VentanaProceso
 from interfaces.ventana_matriz import crear_matriz_visual, crear_vector_visual
+from algoritmos.expresiones import (
+    BASES, CAPACIDAD_PILA, GUARDADOS, OPERANDOS, comprobar_traspuesta_del_producto, evaluar_tokens, nombres_usados,
+)
+from modelos.memoria_matrices import ConstructorExpresion, MatricesBase, PilaResultados
 from modelos.sistema_ecuaciones import SistemaEcuaciones
+from utilidades.colores import asegurar_contraste
 from utilidades.formato import formatear_numero, formatear_matriz_lineas
 from utilidades.fracciones import leer_fraccion
 
@@ -155,7 +161,7 @@ class CalculadoraAlgebraLineal:
         self.root = root
         self.root.title("Estudio de Álgebra Lineal")
         self.root.geometry("1260x780")
-        self.root.minsize(1050, 680)
+        self.root.minsize(1100, 680)
         self.root.configure(bg=self.BACKGROUND)
 
         self.numero_ecuaciones = tk.IntVar(value=3)
@@ -193,11 +199,21 @@ class CalculadoraAlgebraLineal:
         self.prop_v_entries = []
         self.ultimo_resultado = None
         self.ultimo_analisis = None
-        # Modo calculadora en Matrices: último resultado y qué representa cada matriz.
+        # Matrices: A y B quedan de solo lectura al fijarlas; los resultados van a R1–R7.
         self.ultimo_resultado_matriz = None
         self.ultima_expresion = None
         self.expresion_a = "A"
         self.expresion_b = "B"
+        self.base_matrices = MatricesBase()
+        self.pila_resultados = PilaResultados()
+        self.constructor = ConstructorExpresion()
+        self.borrador = None  # (matriz, expresión) que «Guardar resultado» enviaría a la pila
+        self.botones_token = {}
+        self.botones_eliminar = []
+        self.spinboxes_dimension = []
+        self.texto_expresion = tk.StringVar(value="")
+        self.texto_guia = tk.StringVar(value="")
+        self.texto_memoria = tk.StringVar(value="")
         self.filas_mv = tk.IntVar(value=3)
         self.columnas_mv = tk.IntVar(value=3)
         self.vista_actual = "entrada"
@@ -247,6 +263,9 @@ class CalculadoraAlgebraLineal:
         estilo.configure("ProcessSubtitle.TLabel", background=self.BACKGROUND, foreground=self.MUTED, font=("Segoe UI", 10))
         estilo.configure("SectionTitle.TLabel", background=self.WHITE, foreground=self.DARK, font=("Segoe UI", 12, "bold"))
         estilo.configure("Operation.TLabel", background=self.WHITE, foreground=self.TEAL_DARK, font=("Consolas", 11, "bold"))
+        # Tira de la expresión armada (legible, con ᵀ y ⁻¹ bien formados) y su texto de ayuda.
+        estilo.configure("Expr.TLabel", background=self.WHITE, foreground=self.DARK, font=("Cambria Math", 13, "bold"))
+        estilo.configure("ExprAyuda.TLabel", background=self.WHITE, foreground=self.MUTED, font=("Segoe UI", 10))
         estilo.configure("MetricValue.TLabel", background=self.WHITE, foreground=self.DARK, font=("Segoe UI", 12, "bold"))
         estilo.configure("Status.TLabel", background=self.LIGHT_GREEN, foreground=self.GREEN, font=("Segoe UI", 11, "bold"))
         estilo.configure("StatusBad.TLabel", background=self.LIGHT_RED, foreground=self.RED, font=("Segoe UI", 11, "bold"))
@@ -255,20 +274,39 @@ class CalculadoraAlgebraLineal:
         estilo.configure("DangerIcon.TLabel", background=self.LIGHT_RED, foreground=self.RED, font=("Segoe UI", 28, "bold"))
         estilo.configure("Footer.TLabel", background=self.BACKGROUND, foreground=self.MUTED, font=("Segoe UI", 9))
         estilo.configure("Accent.TButton", background=self.TEAL, foreground="white", font=("Segoe UI", 10, "bold"), padding=(15, 9))
-        estilo.map("Accent.TButton", background=[("active", self.TEAL_DARK), ("pressed", self.TEAL_DARK)])
+        # Deshabilitado = apagado (fondo neutro y texto gris), para no confundirlo con un botón activo.
+        estilo.map("Accent.TButton", background=[("disabled", self.BACKGROUND), ("active", self.TEAL_DARK), ("pressed", self.TEAL_DARK)],
+                   foreground=[("disabled", self.MUTED)])
         estilo.configure("Coral.TButton", background=self.CORAL, foreground="white", font=("Segoe UI", 10, "bold"), padding=(15, 9))
-        estilo.map("Coral.TButton", background=[("active", self.CORAL_DARK), ("pressed", self.CORAL_DARK)])
+        estilo.map("Coral.TButton", background=[("disabled", self.BACKGROUND), ("active", self.CORAL_DARK), ("pressed", self.CORAL_DARK)],
+                   foreground=[("disabled", self.MUTED)])
         # Botones de operación (módulo de matrices): claros por defecto, rellenos cuando están activos.
         estilo.configure("Op.TButton", background=self.SURFACE_ALT, foreground=self.TEAL_DARK, font=("Segoe UI", 10, "bold"),
                          padding=(8, 6), bordercolor=self.TEAL, lightcolor=self.SURFACE_ALT, darkcolor=self.SURFACE_ALT)
         estilo.map("Op.TButton", background=[("disabled", self.BACKGROUND), ("active", self.LIGHT_GREEN)],
                    foreground=[("disabled", self.MUTED)], bordercolor=[("disabled", self.BACKGROUND)])
+        # Variante compacta para las filas de muchos botones (constructor de expresiones).
+        estilo.configure("Slot.TButton", background=self.SURFACE_ALT, foreground=self.TEAL_DARK, font=("Segoe UI", 10, "bold"),
+                         padding=(2, 5), bordercolor=self.TEAL, lightcolor=self.SURFACE_ALT, darkcolor=self.SURFACE_ALT)
+        estilo.map("Slot.TButton", background=[("disabled", self.BACKGROUND), ("active", self.LIGHT_GREEN)],
+                   foreground=[("disabled", self.MUTED)], bordercolor=[("disabled", self.BACKGROUND)])
+        # Símbolos matemáticos (+ − · ᵀ ⁻¹ ( ) ⌫): más grandes para que se lean, también deshabilitados.
+        estilo.configure("Sym.TButton", background=self.SURFACE_ALT, foreground=self.TEAL_DARK, font=("Segoe UI", 18, "bold"),
+                         padding=(2, 0), bordercolor=self.TEAL, lightcolor=self.SURFACE_ALT, darkcolor=self.SURFACE_ALT)
+        estilo.map("Sym.TButton", background=[("disabled", self.BACKGROUND), ("active", self.LIGHT_GREEN)],
+                   foreground=[("disabled", "#9AA6A8")], bordercolor=[("disabled", self.BACKGROUND)])
+        # Botón fantasma para acciones secundarias/destructivas pequeñas (✕): sin relleno hasta el hover.
+        estilo.configure("Ghost.TButton", background=self.WHITE, foreground=self.MUTED, font=("Segoe UI", 10),
+                         padding=(4, 2), borderwidth=0, bordercolor=self.WHITE, lightcolor=self.WHITE, darkcolor=self.WHITE)
+        estilo.map("Ghost.TButton", background=[("active", self.LIGHT_RED), ("pressed", self.LIGHT_RED)],
+                   foreground=[("disabled", "#C3CBCD"), ("active", self.RED), ("pressed", self.RED)],
+                   bordercolor=[("active", self.LIGHT_RED)])
         estilo.configure("OpActive.TButton", background=self.TEAL, foreground="white", font=("Segoe UI", 10, "bold"),
                          padding=(8, 6), bordercolor=self.TEAL_DARK)
         estilo.map("OpActive.TButton", background=[("active", self.TEAL_DARK), ("pressed", self.TEAL_DARK)])
-        estilo.configure("Sidebar.TButton", background=self.SIDEBAR, foreground=self.SIDEBAR_TEXT, font=("Segoe UI", 10), padding=(14, 11), anchor="w", borderwidth=0)
+        estilo.configure("Sidebar.TButton", background=self.SIDEBAR, foreground=self.SIDEBAR_TEXT, font=("Segoe UI", 10), padding=(14, 7), anchor="w", borderwidth=0)
         estilo.map("Sidebar.TButton", background=[("active", self.SIDEBAR_ACTIVE), ("pressed", self.SIDEBAR_ACTIVE)], foreground=[("active", self.WHITE), ("pressed", self.WHITE)])
-        estilo.configure("SidebarActive.TButton", background=self.SIDEBAR_ACTIVE, foreground=self.WHITE, font=("Segoe UI", 10, "bold"), padding=(14, 11), anchor="w", borderwidth=0)
+        estilo.configure("SidebarActive.TButton", background=self.SIDEBAR_ACTIVE, foreground=self.WHITE, font=("Segoe UI", 10, "bold"), padding=(14, 7), anchor="w", borderwidth=0)
         estilo.map("SidebarActive.TButton", background=[("active", self.TEAL_DARK), ("pressed", self.TEAL_DARK)], foreground=[("active", self.WHITE)])
         estilo.configure("Header.TLabel", background=self.HEADER, foreground=self.DARK, font=("Georgia", 23, "bold"))
         estilo.configure("HeaderSub.TLabel", background=self.HEADER, foreground=self.MUTED, font=("Segoe UI", 10))
@@ -310,6 +348,20 @@ class CalculadoraAlgebraLineal:
         self.LIGHT_RED = paleta["danger_bg"]
         self.HEADER = paleta["header"]
         self.CORAL_DARK = paleta.get("accent_dark", self.TEAL_DARK)
+        self._asegurar_legibilidad()
+
+    def _asegurar_legibilidad(self):
+        """Oscurece lo justo los colores que no llegan a contraste AA (4.5:1) con su fondo.
+
+        Los temas que ya son legibles no cambian; el resto (y los personalizados) se ajustan
+        sin perder su tono: texto gris, botones de acento con texto blanco y mensajes de estado.
+        """
+        self.MUTED = asegurar_contraste(self.MUTED, (self.WHITE, self.BACKGROUND, self.SURFACE_ALT))
+        self.CORAL = asegurar_contraste(self.CORAL, "#FFFFFF")
+        self.TEAL = asegurar_contraste(self.TEAL, "#FFFFFF")
+        self.CORAL_DARK = asegurar_contraste(self.CORAL_DARK, "#FFFFFF")
+        self.GREEN = asegurar_contraste(self.GREEN, self.LIGHT_GREEN)
+        self.RED = asegurar_contraste(self.RED, self.LIGHT_RED)
 
     def guardar_tema(self, nombre, paleta=None):
         """Guarda la preferencia para que se conserve al volver a abrir PyCharm."""
@@ -643,11 +695,13 @@ class CalculadoraAlgebraLineal:
         self.construir_vista_matrices()
         self.construir_vista_matriz_vector()
         self.construir_vista_propiedades()
+        self.lu = VistaLU(self)
+        self.vista_lu = self.lu.marco
         self.mostrar_vista("entrada")
 
         ttk.Label(
             self.area,
-            text="Programa 5 • Álgebra Lineal (MTM0120) • Grupo 4",
+            text="Programa 6 • Álgebra Lineal (MTM0120) • Grupo 4",
             style="Footer.TLabel",
         ).pack(fill="x", padx=24, pady=(0, 8))
 
@@ -718,13 +772,20 @@ class CalculadoraAlgebraLineal:
         self.boton_propiedades.pack(fill="x", pady=3)
         self.botones_sidebar["propiedades"] = self.boton_propiedades
 
+        self.boton_lu = ttk.Button(
+            self.sidebar, text="LU   Factorización LU", style="Sidebar.TButton",
+            command=lambda: self.mostrar_vista("lu")
+        )
+        self.boton_lu.pack(fill="x", pady=3)
+        self.botones_sidebar["lu"] = self.boton_lu
+
         self.boton_resultados = ttk.Button(self.sidebar, text="✓   Análisis de Resultados", style="Sidebar.TButton", command=lambda: self.mostrar_vista("resultados"))
         self.boton_resultados.pack(fill="x", pady=3)
         self.botones_sidebar["resultados"] = self.boton_resultados
 
         ttk.Separator(self.sidebar).pack(fill="x", pady=22)
 
-        ttk.Label(self.sidebar, text="PROGRAMA 5", style="Sidebar.TLabel", font=("Segoe UI", 8, "bold")).pack(anchor="w")
+        ttk.Label(self.sidebar, text="PROGRAMA 6", style="Sidebar.TLabel", font=("Segoe UI", 8, "bold")).pack(anchor="w")
         ttk.Label(self.sidebar, text="Álgebra Vectorial y Matricial", style="Sidebar.TLabel").pack(anchor="w", pady=(4, 14))
 
         ttk.Button(self.sidebar, text="?   Información del grupo", style="Sidebar.TButton", command=self.mostrar_info).pack(fill="x", pady=3)
@@ -738,7 +799,7 @@ class CalculadoraAlgebraLineal:
         header.pack(fill="x")
 
         ttk.Label(header, text="Estudio de Álgebra Lineal", style="Header.TLabel").pack(anchor="w")
-        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 5  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
+        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 6  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
 
     def nueva_vista(self):
         """Prepara una vista nueva para mostrar su contenido."""
@@ -1566,6 +1627,7 @@ class CalculadoraAlgebraLineal:
             spin.grid(row=1, column=col, padx=3, pady=2)
             spin.bind("<Return>", lambda _e: self.cambiar_dimensiones_matrices())
             spin.bind("<FocusOut>", lambda _e: self.cambiar_dimensiones_matrices())
+            self.spinboxes_dimension.append(spin)
 
         # Botones de operación agrupados. Cada fila es un marco propio (Básicas sola, luego
         # de dos en dos) para que el ancho de una fila no ensanche las demás.
@@ -1587,12 +1649,7 @@ class CalculadoraAlgebraLineal:
         self.marco_matrices = ttk.Frame(izquierda, style="Card.TFrame")
         self.marco_matrices.pack(fill="both", expand=True, pady=(6, 0))
 
-        # Acciones del modo calculadora, justo encima del resultado.
-        acumular = ttk.Frame(derecha, style="Card.TFrame")
-        acumular.pack(fill="x", pady=(10, 0))
-        ttk.Button(acumular, text="Usar resultado como A", style="Accent.TButton", command=lambda: self.usar_resultado_como("A")).pack(side="left", padx=(0, 4))
-        ttk.Button(acumular, text="Usar resultado como B", style="Accent.TButton", command=lambda: self.usar_resultado_como("B")).pack(side="left", padx=4)
-        ttk.Button(acumular, text="Reiniciar expresión", style="Coral.TButton", command=self.reiniciar_expresion_matrices).pack(side="left", padx=(4, 0))
+        self._construir_panel_expresiones(derecha)
         self.marco_resultado_matriz = ttk.Frame(derecha, style="Card.TFrame")
         self.marco_resultado_matriz.pack(fill="both", expand=True, pady=(10, 0))
         self.generar_matrices()
@@ -1936,6 +1993,8 @@ class CalculadoraAlgebraLineal:
             expresion = f"{ea}·{eb}"
         self.ultimo_resultado_matriz = resultado
         self.ultima_expresion = expresion
+        self.borrador = ([fila[:] for fila in resultado], expresion)
+        self._actualizar_constructor()
         self.operacion_matriz.set(op)
         self.actualizar_botones_matrices()
 
@@ -2009,6 +2068,21 @@ class CalculadoraAlgebraLineal:
                 style="Status.TLabel" if coincide else "StatusBad.TLabel",
                 padding=8,
             ).pack(anchor="w", pady=(4, 0))
+
+            # Contraejemplo: la igualdad «(A·B)ᵀ = AᵀBᵀ» es falsa en general.
+            prop = comprobar_traspuesta_del_producto(a, b)
+            falsa = self._agregar_seccion_analisis(
+                interior, "Contraejemplo — (A·B)ᵀ ≠ AᵀBᵀ",
+                "Un error común es no invertir el orden. Comparemos ambos lados."
+            )
+            lados = ttk.Frame(falsa, style="Card.TFrame")
+            lados.pack(anchor="center", pady=6)
+            crear_matriz_visual(lados, prop["izquierda"], len(prop["izquierda"][0])).pack(side="left", padx=8)
+            ttk.Label(lados, text="=" if prop["incorrecta_se_cumple"] else "≠", style="SectionTitle.TLabel").pack(side="left", padx=8)
+            if prop["incorrecta"] is None:
+                ttk.Label(lados, text="AᵀBᵀ no está definido (dimensiones)", style="AnalysisBody.TLabel").pack(side="left")
+            else:
+                crear_matriz_visual(lados, prop["incorrecta"], len(prop["incorrecta"][0])).pack(side="left", padx=8)
         else:
             for i in range(len(resultado)):
                 ttk.Label(
@@ -2022,7 +2096,7 @@ class CalculadoraAlgebraLineal:
 
         final = self._agregar_seccion_analisis(
             interior, f"Paso final — Resultado = {expresion}",
-            "Puede seguir operando con «Usar resultado como A» o «como B»."
+            "Pulse «Guardar resultado» para enviarlo a la memoria (R1–R7) y usarlo en una expresión."
         )
         crear_matriz_visual(
             final, resultado, len(resultado[0])
@@ -2088,41 +2162,6 @@ class CalculadoraAlgebraLineal:
         """Pone paréntesis a una expresión compuesta para poder seguir operándola."""
         return expresion if expresion in ("A", "B") else f"({expresion})"
 
-    def usar_resultado_como(self, destino):
-        """Copia el último resultado en A o B para encadenar otra operación."""
-        if self.ultimo_resultado_matriz is None:
-            messagebox.showinfo(
-                "Sin resultado",
-                "Primero calcule una operación; luego podrá usar su resultado como A o B."
-            )
-            return
-
-        resultado = self.ultimo_resultado_matriz
-        # Se guarda lo escrito en ambas matrices para no perder la que no cambia.
-        texto_a = [[e.get() for e in fila] for fila in self.matriz_a_entries]
-        texto_b = [[e.get() for e in fila] for fila in self.matriz_b_entries]
-        texto_resultado = [[formatear_numero(x) for x in fila] for fila in resultado]
-
-        # El resultado puede tener otra dimensión (p. ej. Aᵀ de 2×3 pasa a 3×2).
-        if destino == "A":
-            self.filas_a.set(len(resultado))
-            self.columnas_a.set(len(resultado[0]))
-            self.expresion_a = self.ultima_expresion
-            texto_a = texto_resultado
-        else:
-            self.filas_b.set(len(resultado))
-            self.columnas_b.set(len(resultado[0]))
-            self.expresion_b = self.ultima_expresion
-            texto_b = texto_resultado
-
-        self.generar_matrices(conservar_expresion=True)
-        self._rellenar_matrices(texto_a, texto_b)
-
-        self.mostrar_resultado_matriz(
-            f"Resultado cargado en {destino}:  {destino} = {self.ultima_expresion}\n\n"
-            "Elija la siguiente operación."
-        )
-
     def _rellenar_matrices(self, texto_a, texto_b):
         """Escribe los valores dados en las casillas de A y B."""
         for entradas, valores in ((self.matriz_a_entries, texto_a), (self.matriz_b_entries, texto_b)):
@@ -2131,14 +2170,215 @@ class CalculadoraAlgebraLineal:
                     entrada.delete(0, "end")
                     entrada.insert(0, valor)
 
-    def reiniciar_expresion_matrices(self):
-        """Vuelve a llamar «A» y «B» a las matrices sin borrar sus valores."""
-        texto_a = [[e.get() for e in fila] for fila in self.matriz_a_entries]
-        texto_b = [[e.get() for e in fila] for fila in self.matriz_b_entries]
+    def _construir_panel_expresiones(self, padre):
+        """Panel de clics: operandos (A, B, R1–R7), operadores y la tira de la expresión.
+
+        Usa 9 columnas iguales (A, B, R1–R7) y un ancho mínimo pequeño para que el panel
+        quepa en media ventana; la dimensión de cada matriz va en una etiqueta debajo.
+        """
+        panel = ttk.Frame(padre, style="Card.TFrame")
+        panel.pack(fill="x", pady=(10, 0))
+        for columna in range(9):
+            panel.columnconfigure(columna, weight=1, uniform="tokens")
+        cabecera = ttk.Frame(panel, style="Card.TFrame")
+        cabecera.grid(row=0, column=0, columnspan=9, sticky="ew")
+        ttk.Label(cabecera, text="Constructor de expresiones", style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(cabecera, textvariable=self.texto_guia, style="CardSubtitle.TLabel", wraplength=380, justify="left").pack(anchor="w")
+
+        # Fila de operandos: A, B y las siete ranuras. Debajo, su dimensión y la ✕ de cada ranura.
+        self.botones_token = {}
+        self.botones_eliminar = []
+        self.etiquetas_dimension = {}
+        for columna, nombre in enumerate(BASES + GUARDADOS):
+            boton = ttk.Button(panel, text=nombre, style="Slot.TButton", width=0, command=lambda n=nombre: self.pulsar_token(n))
+            boton.grid(row=1, column=columna, padx=1, pady=(6, 0), sticky="ew")
+            self.botones_token[nombre] = boton
+            etiqueta = ttk.Label(panel, text="", style="CardSubtitle.TLabel", anchor="center")
+            etiqueta.grid(row=2, column=columna, sticky="ew")
+            self.etiquetas_dimension[nombre] = etiqueta
+            if nombre in GUARDADOS:
+                indice = len(self.botones_eliminar)
+                quitar = ttk.Button(panel, text="✕", style="Ghost.TButton", width=2, command=lambda i=indice: self.eliminar_ranura(i))
+                quitar.grid(row=3, column=columna, padx=1, sticky="ew")
+                self.botones_eliminar.append(quitar)
+
+        # Fila de operadores: siete símbolos, deshacer y limpiar (9 columnas).
+        operadores = [("+", "+"), ("-", "−"), ("*", "·"), ("T", "ᵀ"), ("INV", "⁻¹"), ("(", "("), (")", ")")]
+        for columna, (token, texto) in enumerate(operadores):
+            boton = ttk.Button(panel, text=texto, style="Sym.TButton", width=0, command=lambda t=token: self.pulsar_token(t))
+            boton.grid(row=4, column=columna, padx=1, pady=(8, 0), sticky="ew")
+            self.botones_token[token] = boton
+        ttk.Button(panel, text="⌫", style="Sym.TButton", width=0, command=self.deshacer_token).grid(row=4, column=7, columnspan=2, padx=1, pady=(8, 0), sticky="ew")
+
+        self.etiqueta_expresion = ttk.Label(panel, textvariable=self.texto_expresion, style="ExprAyuda.TLabel", wraplength=380, justify="left")
+        self.etiqueta_expresion.grid(row=5, column=0, columnspan=9, sticky="w", pady=(8, 2))
+
+        # Acciones: se reparten el ancho disponible en vez de forzar columnas fijas.
+        acciones = ttk.Frame(panel, style="Card.TFrame")
+        acciones.grid(row=6, column=0, columnspan=9, sticky="ew", pady=(2, 0))
+        acciones.columnconfigure(0, weight=3)
+        acciones.columnconfigure(1, weight=2)
+        acciones.columnconfigure(2, weight=6)
+        self.boton_fijar = ttk.Button(acciones, text="Fijar A y B", style="Accent.TButton", command=self.fijar_matrices_base)
+        self.boton_fijar.grid(row=0, column=0, padx=1, sticky="ew")
+        self.boton_evaluar = ttk.Button(acciones, text="Evaluar", style="Accent.TButton", command=self.evaluar_expresion)
+        self.boton_evaluar.grid(row=0, column=1, padx=1, sticky="ew")
+        self.boton_guardar = ttk.Button(acciones, text="Guardar resultado", style="Accent.TButton", command=self.guardar_resultado)
+        self.boton_guardar.grid(row=0, column=2, padx=1, sticky="ew")
+        # Acción poco frecuente y destructiva: fila aparte, sin competir con las principales.
+        ttk.Button(panel, text="Nueva sesión", style="Slot.TButton", command=self.nueva_sesion).grid(row=7, column=0, columnspan=3, padx=1, pady=(6, 0), sticky="ew")
+        ttk.Button(panel, text="Borrar todo", style="Slot.TButton", command=self.limpiar_expresion).grid(row=7, column=3, columnspan=3, padx=1, pady=(6, 0), sticky="ew")
+        ttk.Label(panel, textvariable=self.texto_memoria, style="CardSubtitle.TLabel", anchor="e").grid(row=7, column=6, columnspan=3, padx=1, pady=(6, 0), sticky="ew")
+        # Al pasar el cursor por un botón apagado, la guía explica por qué no se puede pulsar.
+        for token, boton in self.botones_token.items():
+            boton.bind("<Enter>", lambda _e, t=token: self._ayuda_token(t))
+            boton.bind("<Leave>", lambda _e: self._actualizar_constructor())
+        self._actualizar_constructor()
+
+    def _motivo_token(self, token):
+        """Devuelve por qué el botón `token` no se puede pulsar ahora, o None si sí se puede."""
+        definidas = self.base_matrices.definidas
+        if token in BASES and not definidas:
+            return "Primero pulse «Fijar A y B» para poder usarlas."
+        if token in GUARDADOS and self.pila_resultados.obtener(GUARDADOS.index(token)) is None:
+            return f"{token} está vacío: guarde un resultado primero."
+        if token in self.constructor.permitidos:
+            return None
+        if token == ")":
+            return "No hay ningún paréntesis abierto que cerrar."
+        if token in OPERANDOS or token == "(":
+            return "Ahora va un operador, ᵀ, ⁻¹ o «)»."
+        return "Aquí va una matriz (A, B, R1–R7) o «(»."
+
+    def _ayuda_token(self, token):
+        """Muestra en la guía el motivo por el que un botón está apagado."""
+        motivo = self._motivo_token(token)
+        if motivo:
+            self.texto_guia.set(f"⚠ {motivo}")
+
+    def _actualizar_constructor(self):
+        """Habilita solo los botones válidos y refresca la expresión, la memoria y «Guardar»."""
+        permitidos = self.constructor.permitidos
+        definidas = self.base_matrices.definidas
+        for token, boton in self.botones_token.items():
+            if token in BASES:
+                disponible = definidas
+            elif token in GUARDADOS:
+                disponible = self.pila_resultados.obtener(GUARDADOS.index(token)) is not None
+            else:
+                disponible = True
+            boton.state(["!disabled"] if token in permitidos and disponible else ["disabled"])
+        for indice, nombre in enumerate(GUARDADOS):
+            valor = self.pila_resultados.obtener(indice)
+            self.etiquetas_dimension[nombre].configure(text=f"{len(valor)}×{len(valor[0])}" if valor else "—")
+            self.botones_eliminar[indice].state(["!disabled"] if valor else ["disabled"])
+        for nombre, matriz in (("A", self.base_matrices.a if definidas else None), ("B", self.base_matrices.b if definidas else None)):
+            self.etiquetas_dimension[nombre].configure(text=f"{len(matriz)}×{len(matriz[0])}" if matriz else "—")
+        self.texto_memoria.set(f"Guardados {self.pila_resultados.cantidad}/{CAPACIDAD_PILA}")
+        if self.constructor.tokens:
+            self.texto_expresion.set(self.constructor.texto)
+            self.etiqueta_expresion.configure(style="Expr.TLabel")
+        else:
+            self.texto_expresion.set("Pulse A, B o un resultado guardado para empezar.")
+            self.etiqueta_expresion.configure(style="ExprAyuda.TLabel")
+        actual = 0 if not definidas else (1 if not self.constructor.completa else 2)
+        pasos = ["Fije A y B", "Arme la expresión", "Evalúe y guarde"]
+        self.texto_guia.set("   ".join(f"{'▶' if i == actual else '·'} {i + 1}. {texto}" for i, texto in enumerate(pasos)))
+        self.boton_fijar.state(["disabled"] if definidas else ["!disabled"])
+        self.boton_evaluar.state(["!disabled"] if self.constructor.completa and definidas else ["disabled"])
+        self.boton_guardar.state(["!disabled"] if self.borrador is not None else ["disabled"])
+
+    def pulsar_token(self, token):
+        """Agrega el token pulsado a la expresión."""
+        self.constructor.agregar(token)
+        self._actualizar_constructor()
+
+    def deshacer_token(self):
+        """Quita el último token de la expresión."""
+        self.constructor.deshacer()
+        self._actualizar_constructor()
+
+    def limpiar_expresion(self):
+        """Borra la expresión armada (no toca A, B ni los resultados guardados)."""
+        self.constructor.limpiar()
+        self._actualizar_constructor()
+
+    def _bloquear_entradas(self, bloquear):
+        """Activa o desactiva las casillas y dimensiones de A y B."""
+        estado = "disabled" if bloquear else "normal"
+        for fila in self.matriz_a_entries + self.matriz_b_entries:
+            for entrada in fila:
+                entrada.configure(state=estado)
+        for spin in self.spinboxes_dimension:
+            spin.configure(state=estado)
+
+    def fijar_matrices_base(self):
+        """Lee A y B, las fija como solo lectura y habilita sus botones en el constructor."""
+        a = self.leer_matriz_entries(self.matriz_a_entries)
+        b = self.leer_matriz_entries(self.matriz_b_entries) if a is not None else None
+        if a is None or b is None:
+            return
+        self.base_matrices.definir(a, b)
+        self._bloquear_entradas(True)
+        self._actualizar_constructor()
+        self.mostrar_resultado_matriz("A y B quedaron fijas (solo lectura). Arme una expresión con los botones o use una operación.")
+
+    def evaluar_expresion(self):
+        """Evalúa la expresión armada y muestra el resultado como borrador guardable."""
+        contexto = {**self.base_matrices.contexto(), **self.pila_resultados.contexto()}
+        tokens = list(self.constructor.tokens)
+        try:
+            resultado = evaluar_tokens(tokens, contexto)
+        except ValueError as error:
+            messagebox.showerror("No se puede evaluar", str(error))
+            return
+        texto = self.constructor.texto
+        self.borrador = ([fila[:] for fila in resultado], texto)
+        self.ultimo_resultado_matriz = resultado
+        self.ultima_expresion = texto
+        for widget in self.marco_resultado_matriz.winfo_children():
+            widget.destroy()
+        interior = self._crear_area_desplazable(self.marco_resultado_matriz)
+        usados = ", ".join(nombres_usados(tokens))
+        datos = self._agregar_seccion_analisis(
+            interior, f"Resultado = {texto}",
+            f"Se usaron: {usados}. Pulse «Guardar resultado» para enviarlo a la memoria."
+        )
+        crear_matriz_visual(datos, resultado, len(resultado[0])).pack(anchor="center", pady=6)
+        self._actualizar_constructor()
+
+    def guardar_resultado(self):
+        """Envía el borrador a la pila; si está llena, reemplaza la ranura más antigua con confirmación."""
+        if self.borrador is None:
+            return
+        matriz, texto = self.borrador
+        pila = self.pila_resultados
+        if pila.esta_llena:
+            antigua = GUARDADOS[pila.indice_mas_antiguo]
+            if not messagebox.askyesno("Memoria llena (7/7)", f"Se reemplazará {antigua}, el resultado más antiguo.\n¿Continuar?"):
+                return
+        indice = pila.guardar(matriz, reemplazar=pila.esta_llena)
+        self.borrador = None
+        self.mostrar_resultado_matriz(f"Guardado en {GUARDADOS[indice]}:  {GUARDADOS[indice]} = {texto}")
+        self._actualizar_constructor()
+
+    def eliminar_ranura(self, indice):
+        """Vacía la ranura R(indice+1)."""
+        self.pila_resultados.eliminar(indice)
+        self._actualizar_constructor()
+
+    def nueva_sesion(self):
+        """Reinicia todo: desbloquea A y B, vacía la memoria y borra la expresión."""
+        if not messagebox.askyesno("Nueva sesión", "Se vaciarán A y B fijas, la expresión y los resultados guardados. ¿Continuar?"):
+            return
+        self.base_matrices = MatricesBase()
+        self.pila_resultados = PilaResultados()
+        self.constructor.limpiar()
+        self.borrador = None
         self.ultimo_resultado_matriz = None
-        self.ultima_expresion = None
+        self._bloquear_entradas(False)
         self.generar_matrices()
-        self._rellenar_matrices(texto_a, texto_b)
+        self._actualizar_constructor()
 
     @staticmethod
     def _es_identidad(matriz):
@@ -3166,6 +3406,7 @@ class CalculadoraAlgebraLineal:
             "matrices": self.vista_matrices,
             "matriz_vector": self.vista_matriz_vector,
             "propiedades": self.vista_propiedades,
+            "lu": self.vista_lu,
         }
         for vista in vistas.values():
             vista.lower()
@@ -3563,7 +3804,7 @@ class CalculadoraAlgebraLineal:
     def mostrar_info(self):
         messagebox.showinfo(
             "Grupo 4",
-            "Programa 5 - Calculadora de Álgebra Lineal\n\n"
+            "Programa 6 - Calculadora de Álgebra Lineal\n\n"
             "Rafael Antonio Arauz Navarro\n"
             "Patricia del Carmen Oquist Talavera\n"
             "Cristopher Rafael Santana Ríos\n"

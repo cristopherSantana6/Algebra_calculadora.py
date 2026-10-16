@@ -62,7 +62,7 @@ Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz d
   - determinante por cofactores, por reducción de filas y por la regla de Sarrus (solo 3×3);
   - resolución de Ax = b por la regla de Cramer;
   - botones que se deshabilitan cuando las dimensiones no son válidas;
-  - modo calculadora para seguir operando con el resultado anterior.
+  - constructor visual de expresiones con memoria de resultados R1–R7.
 - Evaluación y resolución de sistemas Ax=b.
 - Eliminación de Gauss y visualización paso a paso.
 - Aritmética exacta con `Fraction`.
@@ -78,13 +78,19 @@ Algebra_calculadora.py/
 ├── algoritmos/
 │   ├── dependencia_lineal.py
 │   ├── eliminacion_gaussiana.py
-│   ├── matrices.py
+│   ├── matrices.py              (reexporta modulos/modulo_matrices.py)
 │   └── vectores.py
 ├── interfaces/
 │   ├── componentes/tarjeta.py
 │   ├── ventana_matriz.py
 │   ├── ventana_principal.py
 │   └── ventana_proceso.py
+├── modulos/
+│   ├── modulo_gauss.py
+│   ├── modulo_lu.py
+│   └── modulo_matrices.py
+├── teoremas/
+│   └── verificador_propiedades.py
 ├── modelos/
 │   └── sistema_ecuaciones.py
 ├── utilidades/
@@ -162,10 +168,12 @@ Funciones agregadas después de la documentación del Programa 5. Todas usan ún
 - **Determinante por cofactores (det A)**: desarrollo de Laplace por la fila con más ceros; muestra cada término aᵢⱼ·(−1)^(i+j)·det(Mᵢⱼ), los menores 2×2 como ad − bc, la suma final y una comprobación con el método de reducción de filas (`determinante_cofactores` y `desarrollo_cofactores` en `matrices.py`). Indica si A es invertible.
 - **Determinante por reducción de filas (det A)**: lleva A a forma triangular superior mostrando cada operación y su efecto (intercambiar filas cambia el signo; sumar un múltiplo de otra fila no lo cambia); det(A) = signo · producto de la diagonal. Se comprueba con el desarrollo por cofactores (`determinante_reduccion` en `matrices.py`).
 
-### Modo calculadora
-- Botones **«Usar resultado como A»** y **«Usar resultado como B»**: copian el último resultado a la matriz elegida y ajustan sus dimensiones automáticamente.
-- El título de cada matriz muestra la expresión acumulada, por ejemplo «Matriz A = (A·B)ᵀ», para encadenar operaciones como en una calculadora convencional.
-- **«Reiniciar expresión»** vuelve a los nombres A y B sin borrar los valores.
+### Constructor visual de expresiones
+- **«Fijar A y B»** las deja de solo lectura (`MatricesBase` en `modelos/memoria_matrices.py`); «Nueva sesión» las libera.
+- Las expresiones se arman con clics: A, B, R1–R7, `+ − · ᵀ ⁻¹` y paréntesis. Una tabla de transiciones deshabilita los botones inválidos (`siguientes_permitidos` en `algoritmos/expresiones.py`) y `evaluar_tokens` calcula el resultado con las funciones de `matrices.py`.
+- **«Guardar resultado»** envía el último resultado (de una expresión o de cualquier operación) a `PilaResultados`: 7 ranuras; si está llena se reemplaza la más antigua tras confirmar, y cada ranura se puede vaciar con ✕.
+- La traspuesta del producto verifica (A·B)ᵀ = BᵀAᵀ y muestra AᵀBᵀ como contraejemplo.
+- Se eliminaron «Usar resultado como A/B» y «Reiniciar expresión», porque sobrescribían A y B.
 
 ### Correcciones
 - Los módulos de Vectores, Matrices, Matriz por Vector y Propiedades ya no saltan automáticamente a «Análisis de Resultados».
@@ -181,4 +189,17 @@ Funciones agregadas después de la documentación del Programa 5. Todas usan ún
 - Los botones se deshabilitan según las dimensiones de A y B, la operación activa se resalta y una línea de ayuda explica qué matrices usa cada operación y por qué no está disponible.
 - Al cambiar las dimensiones se conservan los valores ya escritos.
 - c·A tiene su propio campo de escalar (antes compartía el del módulo de Vectores).
-- Los botones del modo calculadora quedaron encima del resultado.
+- El panel del constructor de expresiones quedó encima del resultado.
+
+### Módulo III reunido en `modulos/modulo_matrices.py`
+- Todas las operaciones de matrices (suma, resta, c·A, A·B, transposición, determinantes, Cramer, inversa por adjunta y por Gauss-Jordan) están en un único módulo reutilizable; `algoritmos/matrices.py` y `eliminacion_gaussiana.py` solo reexportan sus nombres.
+- Validaciones: entradas enteras o fracciones, dimensiones compatibles, matriz cuadrada y det ≠ 0 (mismo mensaje en ambas inversas).
+- **`verificar_propiedades(matriz_a, matriz_b, matriz_c, escalar_r, escalar_s)`** (ahora en `teoremas/verificador_propiedades.py`) devuelve, para 26 igualdades, los dos lados y si se cumplen; `A·B = B·A` se marca como informativa porque normalmente no se cumple.
+
+### Programa 6: factorización LU y solución de Ax = b
+- `modulos/modulo_lu.py`: `factorizar_lu`, `verificar_factorizacion`, `sustitucion_adelante`, `sustitucion_atras` y `resolver_con_lu`. U se obtiene con reemplazos de fila Fᵢ ← Fᵢ − l·Fⱼ y cada multiplicador l = (elemento a eliminar)/(pivote) se registra en la posición (i, j) de L (m×m, unos en la diagonal).
+- Un pivote cero que exija intercambiar filas detiene el proceso con el mensaje «La matriz no admite Factorización LU sin permutación (requiere pivoteo parcial PA = LU)».
+- Verificaciones: «La factorización es correcta (L · U == A)» y «Comprobación exitosa: A · x == b».
+- `teoremas/verificador_propiedades.py`: 26 igualdades con diagnóstico «Se cumple» / «No se cumple»; incluye (kA)ᵀ = kAᵀ, (Aᵀ)⁻¹ = (A⁻¹)ᵀ, A·A⁻¹ = I, det(A⁻¹) = 1/det(A), det(kA) = kⁿ·det(A), el efecto de las operaciones de fila y el determinante de una matriz triangular.
+- `interfaces/vista_lu.py`: vista de la calculadora con validación y reentrada de datos, logotipo ASCII y la opción «0. Ver Teoremas Clave del Módulo».
+- `modulos/modulo_gauss.py` aloja la eliminación gaussiana; `algoritmos/matrices.py` y `algoritmos/eliminacion_gaussiana.py` solo reexportan nombres.
