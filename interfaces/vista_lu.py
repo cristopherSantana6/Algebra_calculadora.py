@@ -11,6 +11,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from interfaces.componentes.tarjeta import Tarjeta
+from interfaces.dialogo_verificar_lu import DialogoVerificarLU
 from interfaces.ventana_matriz import crear_matriz_visual, crear_vector_visual
 from modulos.modulo_lu import factorizar_lu, resolver_con_lu, verificar_factorizacion
 from utilidades.fracciones import formatear_fraccion, leer_fraccion
@@ -97,6 +98,12 @@ class VistaLU:
         self.boton_resolver.pack(side="left", fill="x", expand=True, padx=4)
         ttk.Button(botones, text="Limpiar", style="Coral.TButton", command=self.generar).pack(
             side="right", fill="x", expand=True, padx=(4, 0))
+        ttk.Button(
+            izquierda,
+            text="Ingresar L y U manualmente y comprobar L · U = A",
+            style="Op.TButton",
+            command=self.abrir_verificacion_manual,
+        ).pack(fill="x", pady=(8, 0))
         ttk.Button(izquierda, text="0. Ver Teoremas Clave del Módulo", style="Op.TButton",
                    command=self.mostrar_teoremas).pack(fill="x", pady=(8, 0))
 
@@ -157,6 +164,26 @@ class VistaLU:
             matriz_a.append(valores[:-1])
             vector_b.append(valores[-1])
         return matriz_a, vector_b
+
+    def abrir_verificacion_manual(self):
+        """Abre un formulario para ingresar L y U y comprobar su producto con A."""
+        matriz_a = []
+        for i, fila in enumerate(self.entradas):
+            valores = []
+            for j, entrada in enumerate(fila[:self.columnas_generadas]):
+                try:
+                    valores.append(leer_fraccion(entrada.get()))
+                except (ValueError, ZeroDivisionError) as error:
+                    messagebox.showerror(
+                        "Entrada inválida",
+                        f"Matriz A, fila {i + 1}, columna {j + 1}: {error}",
+                    )
+                    entrada.focus_set()
+                    entrada.selection_range(0, "end")
+                    return
+            matriz_a.append(valores)
+
+        DialogoVerificarLU(self.app, matriz_a)
 
     def factorizar(self):
         """Factoriza A = LU, verifica L·U == A y muestra el resultado (o el aviso de permutación)."""
