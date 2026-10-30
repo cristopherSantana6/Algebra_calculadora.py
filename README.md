@@ -128,3 +128,12 @@ Algebra_calculadora.py/
 - **Posteriores** – Traspuestas, inversa (adjunta y Gauss-Jordan), determinantes (cofactores, reducción y Sarrus), regla de Cramer, constructor visual de expresiones con memoria R1–R7, la propiedad 9 y el módulo de matrices rediseñado con botones.
 
 Más detalle de cada entrega en [`README_local.md`](README_local.md).
+
+
+### Verificación manual de L · U = A
+
+En la vista de Factorización LU se agregó el botón «Ingresar L y U manualmente y
+comprobar L · U = A». La matriz A se toma de la cuadrícula principal; el formulario
+permite introducir L (m×m) y U (m×n), calcula el producto matricial con fracciones
+exactas y muestra si coincide con A. Si no coincide, señala las posiciones y valores
+diferentes.

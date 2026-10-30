@@ -277,6 +277,11 @@ def ejecutar_casos():
     assert leer_fraccion("1/2") == Fraction(1, 2)
     assert leer_fraccion("-5/8") == Fraction(-5, 8)
     assert leer_fraccion("0.25") == Fraction(1, 4)
+    try:
+        leer_fraccion("1/0")
+        raise AssertionError("Debió rechazar una fracción con denominador cero.")
+    except ValueError:
+        pass
     print("✓ Lectura de fracciones y decimales correcta")
 
 
@@ -437,6 +442,14 @@ def ejecutar_casos():
     assert lu["matriz_L"] == [[1, 0, 0], [2, 1, 0], [-1, -1, 1]]
     assert lu["matriz_U"] == [[2, 1, 1], [0, -8, -2], [0, 0, 1]]
     assert verificar_factorizacion(A_lu, lu["matriz_L"], lu["matriz_U"])["es_correcta"]
+    verificacion_manual_ok = verificar_factorizacion(A_lu, lu["matriz_L"], lu["matriz_U"])
+    assert verificacion_manual_ok["es_correcta"]
+    assert verificacion_manual_ok["producto"] == A_lu
+    U_incorrecta = [fila[:] for fila in lu["matriz_U"]]
+    U_incorrecta[0][0] += 1
+    verificacion_manual_mal = verificar_factorizacion(A_lu, lu["matriz_L"], U_incorrecta)
+    assert not verificacion_manual_mal["es_correcta"]
+    assert verificacion_manual_mal["producto"] != A_lu
     resolucion = resolver_con_lu(A_lu, b_lu)
     assert resolucion["vector_y"] == [5, -12, 2] and resolucion["vector_x"] == [1, 1, 2]
     assert resolucion["comprobacion_exitosa"] and resolucion["verificacion"]["es_correcta"]
