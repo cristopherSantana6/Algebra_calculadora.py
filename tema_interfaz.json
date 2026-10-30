@@ -1,0 +1,21 @@
+{
+  "tema": "Personalizado",
+  "colores": {
+    "primary": "#7057B5",
+    "primary_dark": "#302842",
+    "accent": "#D978A7",
+    "background": "#f9f9f2",
+    "surface": "#FFFFFF",
+    "surface_alt": "#F6F8F8",
+    "sidebar": "#302842",
+    "sidebar_active": "#7057B5",
+    "sidebar_text": "#F3F7F7",
+    "text": "#243238",
+    "muted": "#68777A",
+    "success": "#2D8A67",
+    "danger": "#B4514B",
+    "success_bg": "#E7F4ED",
+    "danger_bg": "#F9E9E7",
+    "header": "#f9f9f2"
+  }
+}

@@ -1,0 +1,214 @@
+# Calculadora de Álgebra Lineal (Programa 5 y ampliaciones posteriores)
+## Grupo 4 - Universidad Americana
+
+Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz del Programa 1. Se conservaron Tkinter/ttk, la distribución por tarjetas, colores, tipografías y navegación visual, agregando las funciones solicitadas en el Programa 4.
+
+### Integrantes
+- Rafael Antonio Arauz Navarro
+- Patricia del Carmen Oquist Talavera
+- Cristopher Rafael Santana Ríos
+- Blanca Alejandra Zeledón Abea
+
+
+
+## Requerimientos integrados del Programa 4
+
+### Dependencia e independencia lineal
+- Solicita cantidad de vectores y dimensión mediante la interfaz.
+- Coloca los vectores como columnas de una matriz \(V\).
+- Construye el sistema homogéneo \(V c = 0\).
+- Reduce por filas usando `Fraction` y Python estándar.
+- Cuenta pivotes y variables libres.
+- Determina explícitamente **L.I.** cuando el número de pivotes coincide con la cantidad de vectores y **L.D.** cuando es menor.
+- Cuando existe dependencia, muestra una relación lineal no trivial.
+- El procedimiento se presenta paso a paso con matrices visuales.
+
+### Mejoras de presentación
+- La ventana **Tema y colores** ahora es desplazable y muestra todos sus controles.
+- Los botones de las combinaciones prediseñadas utilizan el color real de cada tema.
+- El botón **Resultado del examen** de A·v fue sustituido por **Procedimiento**.
+- Gauss y Gauss-Jordan muestran las matrices mediante celdas visuales y cada operación elemental de forma separada.
+- **Análisis de Resultados** reúne el tipo de ejercicio, procedimiento, pivotes, variables libres, dimensiones, clasificación y explicación del porqué.
+- La representación de \(Ax=b\) ahora se muestra mediante A, x y b como bloques visuales, no como texto monoespaciado.
+- Los ejercicios de vectores, matrices, producto matriz-vector, propiedades y sistemas actualizan el análisis general.
+
+## Funcionalidades del Programa 4
+
+- Operaciones con vectores en R^n:
+  - suma;
+  - resta;
+  - multiplicación por escalar.
+- Evaluación de combinación lineal mediante el sistema equivalente Vc=b.
+- Análisis de dependencia e independencia lineal de los vectores, incluyendo una relación no trivial cuando existe.
+- Producto matriz–vector A·v con validación de dimensiones.
+- Módulo de las 9 propiedades algebraicas (las 8 solicitadas más el contraejemplo de A·B = B·A):
+  1. A + B = B + A
+  2. (A + B) + C = A + (B + C)
+  3. A + 0 = A
+  4. r(A + B) = rA + rB
+  5. (r + s)A = rA + sA
+  6. r(sA) = (rs)A
+  7. A(u + v) = Au + Av
+  8. A(cu) = c(Au)
+  9. A·B = B·A (contraejemplo: el producto de matrices no es conmutativo, por lo que la igualdad normalmente no se cumple)
+- El selector de propiedades permite cambiar de una propiedad a otra conservando las mismas matrices y vectores cargados.
+- El resultado muestra ambos lados de la igualdad y las dependencias de dimensiones/componentes requeridas.
+- Operaciones matriciales:
+  - suma y resta con validación de dimensiones;
+  - multiplicación por escalar;
+  - multiplicación A·B con validación columnas(A)=filas(B);
+  - traspuesta de A, traspuesta de B y traspuesta del producto (A·B)ᵀ;
+  - inversa por el método de la adjunta y por Gauss-Jordan;
+  - determinante por cofactores, por reducción de filas y por la regla de Sarrus (solo 3×3);
+  - resolución de Ax = b por la regla de Cramer;
+  - botones que se deshabilitan cuando las dimensiones no son válidas;
+  - constructor visual de expresiones con memoria de resultados R1–R7.
+- Evaluación y resolución de sistemas Ax=b.
+- Eliminación de Gauss y visualización paso a paso.
+- Aritmética exacta con `Fraction`.
+
+### Restricciones
+El programa utiliza únicamente Python estándar y Tkinter/ttk. No utiliza NumPy, SciPy ni funciones avanzadas de `math`.
+
+### Estructura
+
+```text
+Algebra_calculadora.py/
+├── main.py
+├── algoritmos/
+│   ├── dependencia_lineal.py
+│   ├── eliminacion_gaussiana.py
+│   ├── matrices.py              (reexporta modulos/modulo_matrices.py)
+│   └── vectores.py
+├── interfaces/
+│   ├── componentes/tarjeta.py
+│   ├── ventana_matriz.py
+│   ├── ventana_principal.py
+│   └── ventana_proceso.py
+├── modulos/
+│   ├── modulo_gauss.py
+│   ├── modulo_lu.py
+│   └── modulo_matrices.py
+├── teoremas/
+│   └── verificador_propiedades.py
+├── modelos/
+│   └── sistema_ecuaciones.py
+├── utilidades/
+│   ├── formato.py
+│   └── fracciones.py
+└── pruebas/
+    └── casos_prueba.py
+```
+
+## Ejecución en PyCharm
+
+1. Abrir la carpeta del proyecto (la que contiene `main.py`) como proyecto.
+2. Abrir `main.py`.
+3. Ejecutar con el botón ▶ Run.
+4. Desde la barra lateral se puede entrar a Entrada de Matriz, Proceso Gaussiano, Operaciones de Vectores y Operaciones Matriciales.
+
+También se pueden ejecutar las pruebas desde la terminal de PyCharm:
+
+```bash
+python -m pruebas.casos_prueba
+```
+
+Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, dependencia lineal (forma reducida, pivotes, variables libres y relación no trivial), clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversa por adjunta y por Gauss-Jordan, determinante por cofactores, por reducción de filas y por Sarrus, regla de Cramer, dimensiones incompatibles y fracciones exactas.
+
+
+### Funciones añadidas para el I Corte
+
+- Módulo **A·v Matriz por Vector**:
+  - calcula directamente A·v;
+  - verifica paso a paso la propiedad distributiva A(u+v)=Au+Av;
+  - expresa A·v como combinación lineal de las columnas de A usando los componentes de v como escalares.
+- Botón **Ver Ax = b** en la entrada de sistemas:
+  - separa automáticamente la matriz aumentada [A|b];
+  - muestra la matriz de coeficientes A, el vector incógnita x y el vector de términos independientes b.
+- Estas funciones permiten trabajar directamente los tres apartados del examen del I Corte sin usar bibliotecas externas.
+
+## Mejoras de interfaz
+
+- El texto de las ventanas de proceso ya no utiliza una franja blanca debajo del título.
+- Las casillas numéricas limpian el `0` de ayuda al recibir el foco y lo restauran si quedan vacías.
+- Las flechas izquierda/derecha/arriba/abajo y Enter permiten desplazarse entre casillas.
+- Se incorporaron seis paletas de colores y una opción de combinación personalizada mediante selector de color.
+- La selección de tema se guarda en `tema_interfaz.json` y se conserva al volver a abrir el programa.
+- La sección activa de la barra lateral queda resaltada visualmente.
+- Los vectores generadores se muestran con subíndices matemáticos (v₁, v₂, v₃, …).
+- La eliminación de Gauss/Gauss-Jordan normaliza internamente los datos a `Fraction` para conservar exactitud también cuando el usuario introduce enteros.
+
+## Programa 5: Documentación del código
+
+Esta entrega corresponde a la documentación del código desarrollado en el Programa 4 de la asignatura Álgebra Lineal (MTM0120).
+
+El trabajo consiste en mejorar la documentación interna del proyecto mediante encabezados descriptivos para los módulos y cadenas de documentación (*docstrings*) para las clases y funciones. Se explica el propósito de cada componente y, cuando corresponde, los datos que recibe y los resultados que devuelve.
+
+Se conserva la estructura, la lógica matemática y la interfaz de la calculadora desarrollada anteriormente. El objetivo es facilitar la lectura, comprensión, mantenimiento y revisión del código, sin introducir operaciones matemáticas nuevas.
+
+La entrega incluye el código documentado, las pruebas correspondientes y el informe en PDF con las evidencias solicitadas por la docente.
+
+## Ampliaciones posteriores al Programa 5
+
+Funciones agregadas después de la documentación del Programa 5. Todas usan únicamente listas, bucles y `Fraction`; no se utilizan NumPy, SciPy ni funciones de álgebra lineal de `math`.
+
+### Dependencia lineal
+- El veredicto indica explícitamente **L.I. o L.D.** y si el sistema es **homogéneo o heterogéneo** (`es_homogeneo` en `eliminacion_gaussiana.py`).
+- La reducción usa Gauss-Jordan, por lo que la salida es la **matriz escalonada reducida**.
+- Se muestran por nombre las variables básicas y libres (por ejemplo, «Variables libres: 1 (c₃)»).
+- La relación no trivial se escribe como en papel: `v₁ − 2v₂ + v₃ = 0`.
+- La clasificación homogéneo/heterogéneo también aparece en combinación lineal (V·c = b) y en sistemas Ax = b.
+
+### Operaciones matriciales
+- **Traspuesta (Aᵀ)** y **Traspuesta (Bᵀ)**: cada fila se convierte en columna; si la matriz es m×n, su traspuesta es n×m (`trasponer_matriz` en `matrices.py`).
+- **Traspuesta del producto (A·B)ᵀ**: calcula A·B, lo traspone y comprueba la propiedad (A·B)ᵀ = BᵀAᵀ.
+- **Inversa por adjunta (A⁻¹)**: determinante, matriz de cofactores Cᵢⱼ = (−1)^(i+j)·det(Mᵢⱼ), adjunta adj(A) = Cᵀ y A⁻¹ = (1/det A)·adj(A) (`inversa_por_adjunta` en `matrices.py`).
+- **Inversa por Gauss-Jordan (A⁻¹)**: reduce la matriz aumentada [A | I] hasta [I | A⁻¹] mostrando cada operación de fila (`inversa_gauss_jordan` en `eliminacion_gaussiana.py`).
+- Ambas inversas terminan con la comprobación A·A⁻¹ = I y avisan cuando la matriz es singular (det = 0) o no es cuadrada.
+- **Determinante por cofactores (det A)**: desarrollo de Laplace por la fila con más ceros; muestra cada término aᵢⱼ·(−1)^(i+j)·det(Mᵢⱼ), los menores 2×2 como ad − bc, la suma final y una comprobación con el método de reducción de filas (`determinante_cofactores` y `desarrollo_cofactores` en `matrices.py`). Indica si A es invertible.
+- **Determinante por reducción de filas (det A)**: lleva A a forma triangular superior mostrando cada operación y su efecto (intercambiar filas cambia el signo; sumar un múltiplo de otra fila no lo cambia); det(A) = signo · producto de la diagonal. Se comprueba con el desarrollo por cofactores (`determinante_reduccion` en `matrices.py`).
+
+### Constructor visual de expresiones
+- **«Fijar A y B»** las deja de solo lectura (`MatricesBase` en `modelos/memoria_matrices.py`); «Nueva sesión» las libera.
+- Las expresiones se arman con clics: A, B, R1–R7, `+ − · ᵀ ⁻¹` y paréntesis. Una tabla de transiciones deshabilita los botones inválidos (`siguientes_permitidos` en `algoritmos/expresiones.py`) y `evaluar_tokens` calcula el resultado con las funciones de `matrices.py`.
+- **«Guardar resultado»** envía el último resultado (de una expresión o de cualquier operación) a `PilaResultados`: 7 ranuras; si está llena se reemplaza la más antigua tras confirmar, y cada ranura se puede vaciar con ✕.
+- La traspuesta del producto verifica (A·B)ᵀ = BᵀAᵀ y muestra AᵀBᵀ como contraejemplo.
+- Se eliminaron «Usar resultado como A/B» y «Reiniciar expresión», porque sobrescribían A y B.
+
+### Correcciones
+- Los módulos de Vectores, Matrices, Matriz por Vector y Propiedades ya no saltan automáticamente a «Análisis de Resultados».
+- En Propiedades se eliminó un texto repetido y se agregó la propiedad 9 (A·B = B·A) como contraejemplo.
+- Gauss ya no muestra el paso innecesario de dividir una fila entre 1.
+
+### Regla de Sarrus y regla de Cramer
+- **Determinante por Sarrus (det A)**: solo para matrices 3×3. Se repiten las dos primeras columnas, se suman los productos de las tres diagonales descendentes y se restan los de las tres ascendentes; se comprueba contra el desarrollo por cofactores (`determinante_sarrus` en `matrices.py`).
+- **Regla de Cramer (Ax = b)**: para A cuadrada con det(A) ≠ 0 calcula xᵢ = det(Aᵢ)/det(A), donde Aᵢ es A con la columna i reemplazada por b (la primera columna de B). Muestra cada Aᵢ y su determinante y comprueba A·x = b (`resolver_cramer` en `matrices.py`). Avisa si det(A) = 0, si A no es cuadrada o si b no tiene la longitud correcta.
+
+### Rediseño del módulo de Operaciones Matriciales
+- Las operaciones pasan de un menú desplegable a **botones agrupados** (Básicas, Traspuesta, Inversa, Determinante, Sistema Ax = b); un clic calcula, ya no existe «Calcular operación» ni «Generar matrices».
+- Los botones se deshabilitan según las dimensiones de A y B, la operación activa se resalta y una línea de ayuda explica qué matrices usa cada operación y por qué no está disponible.
+- Al cambiar las dimensiones se conservan los valores ya escritos.
+- c·A tiene su propio campo de escalar (antes compartía el del módulo de Vectores).
+- El panel del constructor de expresiones quedó encima del resultado.
+
+### Módulo III reunido en `modulos/modulo_matrices.py`
+- Todas las operaciones de matrices (suma, resta, c·A, A·B, transposición, determinantes, Cramer, inversa por adjunta y por Gauss-Jordan) están en un único módulo reutilizable; `algoritmos/matrices.py` y `eliminacion_gaussiana.py` solo reexportan sus nombres.
+- Validaciones: entradas enteras o fracciones, dimensiones compatibles, matriz cuadrada y det ≠ 0 (mismo mensaje en ambas inversas).
+- **`verificar_propiedades(matriz_a, matriz_b, matriz_c, escalar_r, escalar_s)`** (ahora en `teoremas/verificador_propiedades.py`) devuelve, para 26 igualdades, los dos lados y si se cumplen; `A·B = B·A` se marca como informativa porque normalmente no se cumple.
+
+### Programa 6: factorización LU y solución de Ax = b
+- `modulos/modulo_lu.py`: `factorizar_lu`, `verificar_factorizacion`, `sustitucion_adelante`, `sustitucion_atras` y `resolver_con_lu`. U se obtiene con reemplazos de fila Fᵢ ← Fᵢ − l·Fⱼ y cada multiplicador l = (elemento a eliminar)/(pivote) se registra en la posición (i, j) de L (m×m, unos en la diagonal).
+- Un pivote cero que exija intercambiar filas detiene el proceso con el mensaje «La matriz no admite Factorización LU sin permutación (requiere pivoteo parcial PA = LU)».
+- Verificaciones: «La factorización es correcta (L · U == A)» y «Comprobación exitosa: A · x == b».
+- `teoremas/verificador_propiedades.py`: 26 igualdades con diagnóstico «Se cumple» / «No se cumple»; incluye (kA)ᵀ = kAᵀ, (Aᵀ)⁻¹ = (A⁻¹)ᵀ, A·A⁻¹ = I, det(A⁻¹) = 1/det(A), det(kA) = kⁿ·det(A), el efecto de las operaciones de fila y el determinante de una matriz triangular.
+- `interfaces/vista_lu.py`: vista de la calculadora con validación y reentrada de datos, logotipo ASCII y la opción «0. Ver Teoremas Clave del Módulo».
+- `modulos/modulo_gauss.py` aloja la eliminación gaussiana; `algoritmos/matrices.py` y `algoritmos/eliminacion_gaussiana.py` solo reexportan nombres.
+
+
+## Corrección de visualización del módulo LU
+
+Las matrices L y U se muestran ahora en bloques verticales, cada una
+utilizando el ancho del panel de resultados. Para matrices de más de cinco
+columnas se habilita desplazamiento horizontal local, evitando que las
+últimas columnas queden ocultas. La secuencia de pasos de LU utiliza el
+mismo componente de presentación.
