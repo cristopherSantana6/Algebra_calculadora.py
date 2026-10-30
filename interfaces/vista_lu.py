@@ -11,6 +11,10 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from interfaces.componentes.tarjeta import Tarjeta
+<<<<<<< HEAD
+=======
+from interfaces.dialogo_verificar_lu import DialogoVerificarLU
+>>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
 from interfaces.ventana_matriz import crear_matriz_visual, crear_vector_visual
 from modulos.modulo_lu import factorizar_lu, resolver_con_lu, verificar_factorizacion
 from utilidades.fracciones import formatear_fraccion, leer_fraccion
@@ -97,6 +101,15 @@ class VistaLU:
         self.boton_resolver.pack(side="left", fill="x", expand=True, padx=4)
         ttk.Button(botones, text="Limpiar", style="Coral.TButton", command=self.generar).pack(
             side="right", fill="x", expand=True, padx=(4, 0))
+<<<<<<< HEAD
+=======
+        ttk.Button(
+            izquierda,
+            text="Ingresar L y U manualmente y comprobar L · U = A",
+            style="Op.TButton",
+            command=self.abrir_verificacion_manual,
+        ).pack(fill="x", pady=(8, 0))
+>>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
         ttk.Button(izquierda, text="0. Ver Teoremas Clave del Módulo", style="Op.TButton",
                    command=self.mostrar_teoremas).pack(fill="x", pady=(8, 0))
 
@@ -158,6 +171,29 @@ class VistaLU:
             vector_b.append(valores[-1])
         return matriz_a, vector_b
 
+<<<<<<< HEAD
+=======
+    def abrir_verificacion_manual(self):
+        """Abre un formulario para ingresar L y U y comprobar su producto con A."""
+        matriz_a = []
+        for i, fila in enumerate(self.entradas):
+            valores = []
+            for j, entrada in enumerate(fila[:self.columnas_generadas]):
+                try:
+                    valores.append(leer_fraccion(entrada.get()))
+                except (ValueError, ZeroDivisionError) as error:
+                    messagebox.showerror(
+                        "Entrada inválida",
+                        f"Matriz A, fila {i + 1}, columna {j + 1}: {error}",
+                    )
+                    entrada.focus_set()
+                    entrada.selection_range(0, "end")
+                    return
+            matriz_a.append(valores)
+
+        DialogoVerificarLU(self.app, matriz_a)
+
+>>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
     def factorizar(self):
         """Factoriza A = LU, verifica L·U == A y muestra el resultado (o el aviso de permutación)."""
         datos = self._leer()
@@ -219,6 +255,7 @@ class VistaLU:
                       justify="left").pack(anchor="w", pady=3)
 
     def _mostrar_matrices_lado_a_lado(self, padre, matriz_L, matriz_U):
+<<<<<<< HEAD
         """Dibuja L y U una junto a la otra con sus títulos y dimensiones."""
         fila = ttk.Frame(padre, style="Card.TFrame")
         fila.pack(fill="x", pady=(6, 0))
@@ -228,6 +265,91 @@ class VistaLU:
             bloque.pack(side="left", padx=(0, 18))
             ttk.Label(bloque, text=titulo, style="SectionTitle.TLabel").pack(anchor="w", pady=(0, 4))
             crear_matriz_visual(bloque, matriz).pack(anchor="w")
+=======
+        """
+        Dibuja L y U en bloques verticales para que ambas matrices
+        aprovechen el ancho completo del panel de resultados.
+
+        Si una matriz tiene muchas columnas, incorpora desplazamiento
+        horizontal local en lugar de dejar que las últimas columnas
+        queden recortadas.
+        """
+        matrices = (
+            (f"Matriz L ({len(matriz_L)}×{len(matriz_L[0])})", matriz_L),
+            (f"Matriz U ({len(matriz_U)}×{len(matriz_U[0])})", matriz_U),
+        )
+
+        for titulo, matriz in matrices:
+            bloque = ttk.Frame(padre, style="Card.TFrame")
+            bloque.pack(fill="x", pady=(10, 8))
+
+            ttk.Label(
+                bloque,
+                text=titulo,
+                style="SectionTitle.TLabel",
+            ).pack(anchor="w", pady=(0, 5))
+
+            cantidad_columnas = max(
+                (len(fila) for fila in matriz),
+                default=0,
+            )
+
+            # En matrices pequeñas se usa todo el ancho disponible.
+            # Las matrices anchas reciben una barra horizontal propia.
+            if cantidad_columnas <= 5:
+                tabla = crear_matriz_visual(
+                    bloque,
+                    matriz,
+                    cell_width=58,
+                    pad=3,
+                )
+                tabla.pack(anchor="center", pady=(0, 4))
+            else:
+                area = ttk.Frame(bloque, style="Card.TFrame")
+                area.pack(fill="x", expand=True)
+
+                canvas = tk.Canvas(
+                    area,
+                    height=max(110, min(420, len(matriz) * 58 + 24)),
+                    bg=self.app.WHITE,
+                    highlightthickness=0,
+                    bd=0,
+                )
+                barra = ttk.Scrollbar(
+                    area,
+                    orient="horizontal",
+                    command=canvas.xview,
+                )
+                canvas.configure(xscrollcommand=barra.set)
+
+                interior = ttk.Frame(canvas, style="Card.TFrame")
+                ventana = canvas.create_window(
+                    (0, 0),
+                    window=interior,
+                    anchor="nw",
+                )
+
+                tabla = crear_matriz_visual(
+                    interior,
+                    matriz,
+                    cell_width=56,
+                    pad=3,
+                )
+                tabla.pack(anchor="w", pady=(2, 4))
+
+                def actualizar_region(_event=None, c=canvas):
+                    c.configure(scrollregion=c.bbox("all"))
+
+                interior.bind("<Configure>", actualizar_region)
+                canvas.bind(
+                    "<Configure>",
+                    lambda event, c=canvas, w=ventana:
+                        c.itemconfigure(w, height=event.height),
+                )
+
+                canvas.pack(fill="x", expand=True)
+                barra.pack(fill="x", pady=(2, 0))
+>>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
 
     def _mostrar_pasos_reduccion(self, interior, titulo, pasos, numero_variables):
         """Muestra una sección con cada paso de una reducción sobre una matriz aumentada."""

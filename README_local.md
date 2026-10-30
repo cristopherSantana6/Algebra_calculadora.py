@@ -203,3 +203,24 @@ Funciones agregadas después de la documentación del Programa 5. Todas usan ún
 - `teoremas/verificador_propiedades.py`: 26 igualdades con diagnóstico «Se cumple» / «No se cumple»; incluye (kA)ᵀ = kAᵀ, (Aᵀ)⁻¹ = (A⁻¹)ᵀ, A·A⁻¹ = I, det(A⁻¹) = 1/det(A), det(kA) = kⁿ·det(A), el efecto de las operaciones de fila y el determinante de una matriz triangular.
 - `interfaces/vista_lu.py`: vista de la calculadora con validación y reentrada de datos, logotipo ASCII y la opción «0. Ver Teoremas Clave del Módulo».
 - `modulos/modulo_gauss.py` aloja la eliminación gaussiana; `algoritmos/matrices.py` y `algoritmos/eliminacion_gaussiana.py` solo reexportan nombres.
+<<<<<<< HEAD
+=======
+
+
+## Corrección de visualización del módulo LU
+
+Las matrices L y U se muestran ahora en bloques verticales, cada una
+utilizando el ancho del panel de resultados. Para matrices de más de cinco
+columnas se habilita desplazamiento horizontal local, evitando que las
+últimas columnas queden ocultas. La secuencia de pasos de LU utiliza el
+mismo componente de presentación.
+
+
+### Verificación manual de L · U = A
+
+En la vista de Factorización LU se agregó el botón «Ingresar L y U manualmente y
+comprobar L · U = A». La matriz A se toma de la cuadrícula principal; el formulario
+permite introducir L (m×m) y U (m×n), calcula el producto matricial con fracciones
+exactas y muestra si coincide con A. Si no coincide, señala las posiciones y valores
+diferentes.
+>>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2

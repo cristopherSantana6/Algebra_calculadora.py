@@ -20,6 +20,11 @@ def leer_fraccion(texto):
 
     try:
         return Fraction(valor)
+<<<<<<< HEAD
+=======
+    except ZeroDivisionError:
+        raise ValueError("El denominador de una fracción no puede ser cero.") from None
+>>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
     except ValueError:
         raise ValueError(
             f"'{texto}' no es un número válido. Use formatos como 2, -3 o 1/2."
