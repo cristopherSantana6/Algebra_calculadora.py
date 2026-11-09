@@ -11,10 +11,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from interfaces.componentes.tarjeta import Tarjeta
-<<<<<<< HEAD
-=======
 from interfaces.dialogo_verificar_lu import DialogoVerificarLU
->>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
 from interfaces.ventana_matriz import crear_matriz_visual, crear_vector_visual
 from modulos.modulo_lu import factorizar_lu, resolver_con_lu, verificar_factorizacion
 from utilidades.fracciones import formatear_fraccion, leer_fraccion
@@ -101,15 +98,12 @@ class VistaLU:
         self.boton_resolver.pack(side="left", fill="x", expand=True, padx=4)
         ttk.Button(botones, text="Limpiar", style="Coral.TButton", command=self.generar).pack(
             side="right", fill="x", expand=True, padx=(4, 0))
-<<<<<<< HEAD
-=======
         ttk.Button(
             izquierda,
             text="Ingresar L y U manualmente y comprobar L · U = A",
             style="Op.TButton",
             command=self.abrir_verificacion_manual,
         ).pack(fill="x", pady=(8, 0))
->>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
         ttk.Button(izquierda, text="0. Ver Teoremas Clave del Módulo", style="Op.TButton",
                    command=self.mostrar_teoremas).pack(fill="x", pady=(8, 0))
 
@@ -171,8 +165,6 @@ class VistaLU:
             vector_b.append(valores[-1])
         return matriz_a, vector_b
 
-<<<<<<< HEAD
-=======
     def abrir_verificacion_manual(self):
         """Abre un formulario para ingresar L y U y comprobar su producto con A."""
         matriz_a = []
@@ -193,7 +185,6 @@ class VistaLU:
 
         DialogoVerificarLU(self.app, matriz_a)
 
->>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
     def factorizar(self):
         """Factoriza A = LU, verifica L·U == A y muestra el resultado (o el aviso de permutación)."""
         datos = self._leer()
@@ -255,17 +246,6 @@ class VistaLU:
                       justify="left").pack(anchor="w", pady=3)
 
     def _mostrar_matrices_lado_a_lado(self, padre, matriz_L, matriz_U):
-<<<<<<< HEAD
-        """Dibuja L y U una junto a la otra con sus títulos y dimensiones."""
-        fila = ttk.Frame(padre, style="Card.TFrame")
-        fila.pack(fill="x", pady=(6, 0))
-        for titulo, matriz in ((f"L ({len(matriz_L)}×{len(matriz_L[0])})", matriz_L),
-                               (f"U ({len(matriz_U)}×{len(matriz_U[0])})", matriz_U)):
-            bloque = ttk.Frame(fila, style="Card.TFrame")
-            bloque.pack(side="left", padx=(0, 18))
-            ttk.Label(bloque, text=titulo, style="SectionTitle.TLabel").pack(anchor="w", pady=(0, 4))
-            crear_matriz_visual(bloque, matriz).pack(anchor="w")
-=======
         """
         Dibuja L y U en bloques verticales para que ambas matrices
         aprovechen el ancho completo del panel de resultados.
@@ -349,7 +329,6 @@ class VistaLU:
 
                 canvas.pack(fill="x", expand=True)
                 barra.pack(fill="x", pady=(2, 0))
->>>>>>> 3ecd155830fd24038d6d940a04036536f73016e2
 
     def _mostrar_pasos_reduccion(self, interior, titulo, pasos, numero_variables):
         """Muestra una sección con cada paso de una reducción sobre una matriz aumentada."""
