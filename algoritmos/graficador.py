@@ -1,8 +1,5 @@
 
 """
-Graficador de Funciones - Programa 7.
-Calculadora de Álgebra Lineal, Universidad Americana.
-
 Genera puntos, valida el dominio y representa funciones.
 Admite marcar la raíz aproximada del Método de Bisección.
 """
@@ -17,8 +14,11 @@ from algoritmos.biseccion import X, convertir_funcion
 
 
 def generar_puntos(funcion, x_min, x_max, cantidad=2001):
-    """Genera puntos reales y finitos de una función."""
-
+    """Genera los puntos necesarios para graficar una función.
+    Valida el intervalo y descarta resultados no reales o infinitos.
+    Detecta saltos grandes para evitar unir posibles asíntotas.
+    """
+    # Validar que los límites ingresados sean numéricos.
     try:
         x_min = float(x_min)
         x_max = float(x_max)
@@ -38,6 +38,7 @@ def generar_puntos(funcion, x_min, x_max, cantidad=2001):
     if cantidad < 1000:
         raise ValueError("Se requieren al menos 1000 puntos.")
 
+    # Convertir la función y generar puntos distribuidos en el intervalo.
     expresion = convertir_funcion(funcion)
     x = np.linspace(x_min, x_max, cantidad)
 
@@ -71,6 +72,7 @@ def generar_puntos(funcion, x_min, x_max, cantidad=2001):
         & (np.abs(valores.imag) < 1e-10)
     )
 
+    # Los valores inválidos se representan con NaN para no graficarlos.
     y = np.where(validos, valores.real, np.nan)
 
     if not np.any(validos):
@@ -121,6 +123,7 @@ def generar_puntos(funcion, x_min, x_max, cantidad=2001):
                 ):
                     y[i + 1] = np.nan
 
+    # Devolver los puntos y la información necesaria para la gráfica.
     return {
         "funcion": funcion,
         "expresion": expresion,
@@ -134,13 +137,17 @@ def generar_puntos(funcion, x_min, x_max, cantidad=2001):
 
 
 def crear_grafica(funcion, x_min, x_max,
-                  raiz=None, intervalo_raiz=None):
-    """Crea una figura con ejes, leyenda y raíz opcional."""
-
+                 raiz=None, intervalo_raiz=None):
+    """Construye la representación gráfica de una función.
+    Incluye ejes, cuadrícula, leyenda y límites del intervalo.
+    Permite señalar una raíz aproximada y el intervalo de Bisección.
+    """
+    # Obtener los puntos válidos de la función.
     datos = generar_puntos(
         funcion, x_min, x_max
     )
 
+    # Crear la figura de Matplotlib.
     figura = Figure(
         figsize=(9, 5),
         dpi=100,
@@ -149,6 +156,7 @@ def crear_grafica(funcion, x_min, x_max,
 
     eje = figura.add_subplot(111)
 
+    # Dibujar la curva con el color establecido en la interfaz.
     eje.plot(
         datos["x"],
         datos["y"],
@@ -157,6 +165,7 @@ def crear_grafica(funcion, x_min, x_max,
         label=f"f(x) = {funcion}"
     )
 
+    # Dibujar los ejes horizontal y vertical.
     eje.axhline(
         0, color="#555555", linewidth=0.8
     )
@@ -201,6 +210,7 @@ def crear_grafica(funcion, x_min, x_max,
             label="Intervalo inicial de Bisección"
         )
 
+    # Configurar el título y los nombres de los ejes.
     eje.set_title(
         "Graficador de Funciones",
         fontsize=14,
@@ -210,17 +220,20 @@ def crear_grafica(funcion, x_min, x_max,
     eje.set_xlabel("Eje X")
     eje.set_ylabel("Eje Y")
 
+    # Mantener los límites establecidos por el usuario.
     eje.set_xlim(
         datos["x_min"],
         datos["x_max"]
     )
 
+    # Mostrar la cuadrícula para facilitar la lectura.
     eje.grid(
         True,
         linestyle="--",
         alpha=0.35
     )
 
+    # Agregar la leyenda y ajustar la distribución de la figura.
     eje.legend(loc="best", fontsize=9)
     figura.tight_layout()
 

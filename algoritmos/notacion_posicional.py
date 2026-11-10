@@ -1,8 +1,5 @@
 
 """
-Notación Posicional - Programa 7.
-Calculadora de Álgebra Lineal, Universidad Americana.
-
 Descompone números enteros en base 10 y base 2.
 Muestra las potencias, las operaciones y las conversiones
 entre ambas bases.
@@ -10,8 +7,10 @@ entre ambas bases.
 
 
 def validar_numero(numero, base):
-    """Valida que el número pertenezca a la base indicada."""
-
+    """Comprueba que el número pertenezca a la base indicada.
+    Acepta enteros positivos y negativos.
+    Rechaza los dígitos que no correspondan a la base.
+    """
     numero = str(numero).strip()
 
     if not numero:
@@ -41,8 +40,10 @@ def validar_numero(numero, base):
 
 
 def descomponer_numero(numero, base):
-    """Descompone un entero mediante potencias de su base."""
-
+    """Descompone un número mediante las potencias de su base.
+    Calcula su valor decimal y su representación binaria.
+    Guarda los términos y las operaciones realizadas.
+    """
     signo, digitos = validar_numero(numero, base)
 
     negativo = signo == "-" and any(d != "0" for d in digitos)
@@ -52,6 +53,7 @@ def descomponer_numero(numero, base):
 
     cantidad = len(digitos)
 
+    # Cada dígito se multiplica por la base elevada a su posición.
     for indice, digito in enumerate(digitos):
         potencia = cantidad - indice - 1
         valor_digito = int(digito)
@@ -106,8 +108,10 @@ def descomponer_numero(numero, base):
 
 
 def mostrar_procedimiento(datos):
-    """Construye una explicación de la descomposición posicional."""
-
+    """Construye el procedimiento de la conversión posicional.
+    Presenta la descomposición por potencias y las operaciones.
+    Muestra la equivalencia entre las bases de origen y destino.
+    """
     numero = datos["numero_original"]
     base = datos["base_origen"]
     base_destino = datos["base_destino"]
@@ -148,14 +152,16 @@ def mostrar_procedimiento(datos):
 
 
 def convertir_decimal_binario(numero):
-    """Convierte un número entero decimal a binario."""
-
+    """Convierte un número entero de base 10 a base 2.
+    Utiliza la descomposición posicional para obtener el resultado.
+    """
     datos = descomponer_numero(numero, 10)
     return datos["numero_binario"]
 
 
 def convertir_binario_decimal(numero):
-    """Convierte un número binario a decimal."""
-
+    """Convierte un número entero de base 2 a base 10.
+    Utiliza la descomposición posicional para obtener el resultado.
+    """
     datos = descomponer_numero(numero, 2)
     return datos["valor_decimal"]

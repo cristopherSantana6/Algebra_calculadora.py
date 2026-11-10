@@ -1,9 +1,4 @@
-
 """
-Errores Numéricos - Programa 7.
-Calculadora de Álgebra Lineal.
-Universidad Americana (UAM).
-
 Incluye:
 1. Cálculo de errores.
 2. Propagación del error.
@@ -27,7 +22,9 @@ import numpy as np
 
 
 def validar_real(valor, nombre="Valor"):
-    """Convierte un dato numérico y comprueba que sea finito."""
+    """Convierte un valor a float y verifica que sea finito.
+    Genera un error si el dato no es numérico o válido.
+    """
     try:
         numero = float(valor)
     except (ValueError, TypeError, OverflowError):
@@ -48,7 +45,9 @@ def validar_real(valor, nombre="Valor"):
 # ------------------------------------------------------
 
 def calcular_errores(valor_verdadero, valor_aproximado):
-    """Calcula error absoluto, relativo y porcentual."""
+    """Calcula los errores absoluto, relativo y porcentual.
+    Valida los valores y explica los resultados obtenidos.
+    """
 
     xv = validar_real(valor_verdadero, "Valor verdadero")
     xa = validar_real(valor_aproximado, "Valor aproximado")
@@ -58,6 +57,7 @@ def calcular_errores(valor_verdadero, valor_aproximado):
     if not math.isfinite(error_absoluto):
         raise ValueError("El error calculado no es finito.")
 
+    # El error relativo no se define cuando el valor verdadero es cero.
     if xv == 0:
         error_relativo = None
         error_porcentual = None
@@ -92,17 +92,24 @@ def calcular_errores(valor_verdadero, valor_aproximado):
 # ------------------------------------------------------
 
 def funcion_propagacion(x):
-    """Evalúa f(x) = sin(x) + x²."""
+    """Evalúa la función f(x) = sin(x) + x².
+    Se utiliza para estudiar la propagación del error.
+    """
     return math.sin(x) + x ** 2
 
 
 def derivada_propagacion(x):
-    """Evalúa f'(x) = cos(x) + 2x."""
+    """Evalúa la derivada f'(x) = cos(x) + 2x.
+    Permite estimar el cambio de la función ante una perturbación.
+    """
     return math.cos(x) + 2 * x
 
 
 def calcular_propagacion(x, delta_x):
-    """Compara la propagación lineal y el cambio real."""
+    """Estima el cambio en f(x) producido por una perturbación.
+    Compara la derivada analítica, la numérica y el cambio real.
+    Devuelve los cálculos y las diferencias obtenidas.
+    """
 
     x = validar_real(x, "Valor de x")
     delta_x = validar_real(delta_x, "Perturbación Δx")
@@ -134,6 +141,7 @@ def calcular_propagacion(x, delta_x):
         - funcion_propagacion(x - h)
     ) / (2 * h)
 
+    # Aproximación de primer orden: Δy ≈ f'(x) · Δx.
     delta_y_aproximado = derivada_exacta * delta_x
     delta_y_numerico = derivada_numerica * delta_x
 
@@ -190,9 +198,9 @@ def simular_truncamiento_redondeo(
         incremento="0.1666666667",
         repeticiones=12,
         decimales=2):
-    """
-    Simula sumas repetidas, truncando o redondeando
-    cada incremento antes de acumularlo.
+    """Simula sumas repetidas con truncamiento y redondeo.
+    Aproxima cada incremento antes de acumularlo.
+    Registra los errores en cada repetición.
     """
 
     try:
@@ -218,6 +226,7 @@ def simular_truncamiento_redondeo(
             "Los decimales deben estar entre 0 y 10."
         )
 
+    # Decimal permite controlar las cifras sin añadir errores binarios de float.
     unidad = Decimal(1).scaleb(-decimales)
 
     truncado = incremento.quantize(
@@ -233,6 +242,7 @@ def simular_truncamiento_redondeo(
 
     pasos = []
 
+    # Guardar la evolución del error para mostrarla en la gráfica.
     for k in range(1, repeticiones + 1):
         acumulado_truncado += truncado
         acumulado_redondeado += redondeado
@@ -285,9 +295,9 @@ def simular_truncamiento_redondeo(
 # ------------------------------------------------------
 
 def analizar_inestabilidad(x):
-    """
-    Compara dos formas equivalentes de calcular:
-    sqrt(x² + 1) - x, para x positivo.
+    """Compara dos expresiones matemáticas equivalentes.
+    Muestra la pérdida de precisión por cancelación numérica.
+    Recibe un valor positivo y devuelve ambos resultados.
     """
 
     x = validar_real(x, "Valor de x")
@@ -331,11 +341,15 @@ def analizar_inestabilidad(x):
 # ------------------------------------------------------
 
 def analizar_punto_flotante():
-    """Muestra precisión, overflow y underflow controlados."""
+    """Demuestra las limitaciones del punto flotante float64.
+    Calcula el épsilon de máquina y ejemplos de overflow y underflow.
+    """
 
+    # Algunos decimales no se representan exactamente en binario.
     suma = 0.1 + 0.2
     comparacion = suma == 0.3
 
+    # Separación entre 1.0 y el siguiente float64 representable.
     epsilon = float(np.finfo(float).eps)
 
     # Overflow: el resultado excede el rango del float.
@@ -379,7 +393,9 @@ def analizar_punto_flotante():
 # ------------------------------------------------------
 
 def obtener_tipos_errores():
-    """Devuelve definiciones breves y ejemplos."""
+    """Devuelve una lista de tipos de errores numéricos.
+    Incluye una definición y un ejemplo para cada tipo.
+    """
 
     return [
         {

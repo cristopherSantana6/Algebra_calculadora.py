@@ -812,7 +812,7 @@ class CalculadoraAlgebraLineal:
         header.pack(fill="x")
 
         ttk.Label(header, text="Estudio de Álgebra Lineal", style="Header.TLabel").pack(anchor="w")
-        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 6  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
+        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 7  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
 
     def nueva_vista(self):
         """Prepara una vista nueva para mostrar su contenido."""

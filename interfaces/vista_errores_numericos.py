@@ -1,5 +1,4 @@
-"""Interfaz Tkinter del módulo de Errores Numéricos (Programa 7).
-
+"""
 Se integra como una subvista dentro de VistaMetodosNumericos y utiliza
 los cálculos puros implementados en algoritmos.errores_numericos.
 """
@@ -55,6 +54,8 @@ class VistaErroresNumericos:
     }
 
     def __init__(self, padre):
+        """Inicializa la vista de Errores Numéricos.
+        Prepara los controles y crea la interfaz."""
         self.padre = padre  # instancia de VistaMetodosNumericos
         self.app = padre.app
         self.marco = ttk.Frame(padre.marco)
@@ -65,7 +66,8 @@ class VistaErroresNumericos:
         self._construir()
 
     def _construir(self):
-        """Construye tarjetas de controles y resultados."""
+        """Construye los paneles de entrada y resultados.
+        Agrega navegación, desplazamiento y botones de acción."""
         self.marco.columnconfigure(0, weight=1, minsize=325)
         self.marco.columnconfigure(1, weight=2)
         self.marco.rowconfigure(0, weight=1)
@@ -93,16 +95,67 @@ class VistaErroresNumericos:
         selector.bind("<<ComboboxSelected>>", self._cambiar_actividad)
 
         self.marco_campos = ttk.Frame(izquierda, style="Card.TFrame")
-        self.marco_campos.pack(fill="x", pady=(15, 8))
+
+        # Área desplazable del formulario
+        zona = ttk.Frame(izquierda, style="Card.TFrame")
+        zona.pack(fill="both", expand=True, pady=(12, 0))
+
+        canvas = tk.Canvas(
+            zona,
+            bg=self.app.WHITE,
+            highlightthickness=0,
+            bd=0
+        )
+
+        barra_vertical = ttk.Scrollbar(
+            zona,
+            orient="vertical",
+            command=canvas.yview
+        )
+
+        canvas.configure(yscrollcommand=barra_vertical.set)
+
+        interior = ttk.Frame(canvas, style="Card.TFrame")
+        ventana = canvas.create_window(
+            (0, 0), window=interior, anchor="nw"
+        )
+
+        interior.bind(
+            "<Configure>",
+            lambda event: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.bind(
+            "<Configure>",
+            lambda event: canvas.itemconfigure(
+                ventana, width=event.width
+            )
+        )
+
+        canvas.pack(side="left", fill="both", expand=True)
+        barra_vertical.pack(side="right", fill="y")
+
+        self.marco_campos = ttk.Frame(
+            interior, style="Card.TFrame"
+        )
+        self.marco_campos.pack(fill="x", pady=(3, 8))
 
         ttk.Button(
-            izquierda, text="Calcular / Analizar", style="Accent.TButton",
+            interior,
+            text="Calcular / Analizar",
+            style="Accent.TButton",
             command=self.calcular
         ).pack(fill="x", pady=(8, 6))
+
         ttk.Button(
-            izquierda, text="Limpiar", style="Coral.TButton",
+            interior,
+            text="Limpiar",
+            style="Coral.TButton",
             command=self.limpiar
         ).pack(fill="x")
+
 
         self.panel_resultado = ttk.Frame(derecha, style="Card.TFrame")
         self.panel_resultado.pack(fill="both", expand=True, pady=(14, 0))
@@ -110,11 +163,14 @@ class VistaErroresNumericos:
         self._mostrar_inicio()
 
     def _cambiar_actividad(self, _event=None):
+        """Actualiza el formulario al seleccionar otra actividad.
+        Limpia la visualización anterior."""
         self._crear_campos()
         self._mostrar_inicio()
 
     def _crear_campos(self):
-        """Muestra solo los campos necesarios para la actividad."""
+        """Crea los campos correspondientes al ejercicio seleccionado.
+        Muestra ejemplos y avisos según la actividad."""
         for widget in self.marco_campos.winfo_children():
             widget.destroy()
         self.campos = {}
@@ -144,6 +200,8 @@ class VistaErroresNumericos:
             ).pack(anchor="w", pady=8)
 
     def _limpiar_panel(self):
+        """Elimina los elementos mostrados en el panel de resultados.
+        Libera la referencia al lienzo de la gráfica anterior."""
         if self.canvas_grafica is not None:
             # Los widgets se eliminan al destruir el contenedor.
             self.canvas_grafica = None
@@ -151,6 +209,8 @@ class VistaErroresNumericos:
             widget.destroy()
 
     def _mostrar_inicio(self):
+        """Restablece el panel con las instrucciones iniciales.
+        Invita a seleccionar una actividad e ingresar datos."""
         self._limpiar_panel()
         ttk.Label(
             self.panel_resultado,
@@ -166,6 +226,8 @@ class VistaErroresNumericos:
 
     @staticmethod
     def _fmt(valor):
+        """Convierte un resultado a texto para mostrarlo en pantalla.
+        Controla valores indefinidos, booleanos y numéricos."""
         if valor is None:
             return "No definido"
         if isinstance(valor, bool):
@@ -174,41 +236,132 @@ class VistaErroresNumericos:
             return f"{valor:.12g}"
         return str(valor)
 
+
     def _mostrar(self, titulo, lineas, explicacion, figura=None):
-        """Renderiza valores, explicación y una gráfica opcional."""
+        """Presenta el procedimiento y su explicación.
+        Si existe una figura, la agrega al área desplazable."""
+
         self._limpiar_panel()
+
         ttk.Label(
-            self.panel_resultado, text=titulo,
-            style="SectionTitle.TLabel", wraplength=540
+            self.panel_resultado,
+            text=titulo,
+            style="SectionTitle.TLabel",
+            wraplength=540
         ).pack(anchor="w", pady=(4, 10))
 
-        area = ttk.Frame(self.panel_resultado, style="Card.TFrame")
-        area.pack(fill="both", expand=True)
-        area.rowconfigure(0, weight=1)
+        # Contenedor principal desplazable
+        contenedor = ttk.Frame(
+            self.panel_resultado,
+            style="Card.TFrame"
+        )
+        contenedor.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(
+            contenedor,
+            bg=self.app.WHITE,
+            highlightthickness=0,
+            bd=0
+        )
+
+        scrollbar = ttk.Scrollbar(
+            contenedor,
+            orient="vertical",
+            command=canvas.yview
+        )
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        interior = ttk.Frame(canvas, style="Card.TFrame")
+
+        ventana = canvas.create_window(
+            (0, 0), window=interior, anchor="nw"
+        )
+
+        interior.bind(
+            "<Configure>",
+            lambda event: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.bind(
+            "<Configure>",
+            lambda event: canvas.itemconfigure(
+                ventana, width=event.width
+            )
+        )
+
+        canvas.pack(
+            side="left", fill="both", expand=True
+        )
+        scrollbar.pack(side="right", fill="y")
+
+        # Área de procedimiento
+        area = ttk.Frame(
+            interior, style="Card.TFrame"
+        )
+        area.pack(fill="x", pady=(0, 10))
+
         area.columnconfigure(0, weight=1)
+        area.rowconfigure(0, weight=1)
 
         texto = tk.Text(
-            area, font=("Consolas", 10), wrap="word", height=16,
-            bg=self.app.SURFACE_ALT, fg=self.app.DARK,
-            relief="flat", padx=12, pady=10
+            area,
+            font=("Consolas", 10),
+            wrap="word",
+            height=13,
+            bg=self.app.SURFACE_ALT,
+            fg=self.app.DARK,
+            relief="flat",
+            padx=12,
+            pady=10
         )
-        barra = ttk.Scrollbar(area, orient="vertical", command=texto.yview)
-        texto.configure(yscrollcommand=barra.set)
+
+        barra_texto = ttk.Scrollbar(
+            area,
+            orient="vertical",
+            command=texto.yview
+        )
+        texto.configure(yscrollcommand=barra_texto.set)
+
         texto.grid(row=0, column=0, sticky="nsew")
-        barra.grid(row=0, column=1, sticky="ns")
-        texto.insert("1.0", "\n".join(lineas) + "\n\nEXPLICACIÓN\n" + explicacion)
+        barra_texto.grid(row=0, column=1, sticky="ns")
+
+        contenido = (
+            "\n".join(lineas)
+            + "\n\nEXPLICACIÓN\n"
+            + explicacion
+        )
+
+        texto.insert("1.0", contenido)
         texto.configure(state="disabled")
 
+        # Gráfica independiente debajo del procedimiento
         if figura is not None:
-            contenedor_grafica = ttk.Frame(self.panel_resultado, style="Card.TFrame")
-            contenedor_grafica.pack(fill="both", expand=True, pady=(10, 0))
-            lienzo = FigureCanvasTkAgg(figura, master=contenedor_grafica)
+            contenedor_grafica = ttk.Frame(
+                interior,
+                style="Card.TFrame",
+                height=300
+            )
+            contenedor_grafica.pack(
+                fill="x", pady=(8, 12)
+            )
+            contenedor_grafica.pack_propagate(False)
+
+            lienzo = FigureCanvasTkAgg(
+                figura, master=contenedor_grafica
+            )
             lienzo.draw()
-            lienzo.get_tk_widget().pack(fill="both", expand=True)
+
+            lienzo.get_tk_widget().pack(
+                fill="both", expand=True
+            )
+
             self.canvas_grafica = lienzo
 
     def calcular(self):
-        """Ejecuta el ejercicio seleccionado y muestra resultados."""
+        """Ejecuta el cálculo de la actividad seleccionada.
+        Presenta resultados y muestra errores de datos si ocurren."""
         opcion = self.modo.get()
         try:
             if opcion == self.OPCIONES[0]:
@@ -309,7 +462,8 @@ class VistaErroresNumericos:
 
     @staticmethod
     def _grafica_simulacion(pasos):
-        """Grafica evolución de errores absolutos en cada iteración."""
+        """Genera la gráfica de errores por iteración.
+        Compara el truncamiento y el redondeo."""
         figura = Figure(figsize=(7, 3.2), dpi=95, facecolor="white")
         eje = figura.add_subplot(111)
         k = [p["iteracion"] for p in pasos]
@@ -330,7 +484,9 @@ class VistaErroresNumericos:
         return figura
 
     def limpiar(self):
-        """Borra datos de la actividad y elimina resultados."""
+        """Vacía los campos de la actividad actual.
+        Restablece el mensaje inicial de resultados."""
         for variable in self.campos.values():
             variable.set("")
         self._mostrar_inicio()
+

@@ -1,8 +1,4 @@
-
 """
-Interfaz de Métodos Numéricos - Programa 7.
-Universidad Americana - Calculadora de Álgebra Lineal.
-
 Integra los algoritmos con la interfaz gráfica Tkinter.
 Primera funcionalidad: Método de Bisección.
 """
@@ -25,6 +21,9 @@ class VistaMetodosNumericos:
     """Vista de Métodos Numéricos integrada a la calculadora."""
 
     def __init__(self, app):
+        """Inicializa las variables de las cuatro funcionalidades.
+        Crea el contenedor de la vista y construye su interfaz.
+        """
         self.app = app
         self.marco = app.nueva_vista()
 
@@ -39,10 +38,16 @@ class VistaMetodosNumericos:
         self.numero_posicional = tk.StringVar(value="")
         self.base_posicional = tk.StringVar(value="10")
 
+        self.funcion_grafica = tk.StringVar(value="")
+        self.x_min_grafica = tk.StringVar(value="")
+        self.x_max_grafica = tk.StringVar(value="")
+
         self.construir()
 
     def construir(self):
-        """Crea los paneles de entrada y resultados."""
+        """Organiza el encabezado y las pantallas del Programa 7.
+        Agrega navegación, formularios y paneles de resultados.
+        """
 
         self.marco.columnconfigure(0, weight=1)
         self.marco.rowconfigure(1, weight=1)
@@ -60,7 +65,7 @@ class VistaMetodosNumericos:
 
         ttk.Label(
             encabezado,
-            text="Programa 7 | Bisección, Gráficas y Notación Posicional",
+            text="Programa 7 | Bisección, Graficador, Notación Posicional y Errores Numéricos",
             style="PageSubtitle.TLabel"
         ).pack(anchor="w")
 
@@ -69,26 +74,28 @@ class VistaMetodosNumericos:
         navegacion = ttk.Frame(encabezado)
         navegacion.pack(fill="x", pady=(12, 0))
 
-        ttk.Button(
-            navegacion,
-            text="Bisección y Gráficas",
-            style="Accent.TButton",
-            command=lambda: self.cambiar_modulo("biseccion")
-        ).pack(side="left", padx=(0, 8))
 
-        ttk.Button(
-            navegacion,
-            text="Notación Posicional",
-            style="Op.TButton",
-            command=lambda: self.cambiar_modulo("posicional")
-        ).pack(side="left")
+        # Botones de navegación del Programa 7
+        self.botones_modulos = {}
 
-        ttk.Button(
-            navegacion,
-            text="Errores Numéricos",
-            style="Op.TButton",
-            command=lambda: self.cambiar_modulo("errores")
-        ).pack(side="left", padx=(8, 0))
+        opciones = [
+            ("biseccion", "Método de Bisección"),
+            ("graficador", "Graficador"),
+            ("posicional", "Notación Posicional"),
+            ("errores", "Errores Numéricos")
+        ]
+
+        for nombre, texto in opciones:
+            boton = ttk.Button(
+                navegacion,
+                text=texto,
+                style="Op.TButton",
+                command=lambda n=nombre: self.cambiar_modulo(n)
+            )
+
+            boton.pack(side="left", padx=(0, 8))
+
+            self.botones_modulos[nombre] = boton
 
         # Pantalla para Bisección y Graficador
         self.vista_biseccion = ttk.Frame(self.marco)
@@ -99,6 +106,12 @@ class VistaMetodosNumericos:
         # Pantalla independiente de Notación Posicional
         self.vista_posicional = ttk.Frame(self.marco)
         self.vista_posicional.grid(
+            row=1, column=0, sticky="nsew"
+        )
+
+        # Vista independiente para el Graficador
+        self.vista_graficador = ttk.Frame(self.marco)
+        self.vista_graficador.grid(
             row=1, column=0, sticky="nsew"
         )
 
@@ -189,6 +202,7 @@ class VistaMetodosNumericos:
 
         # Permite desplazarse con la rueda del mouse
         def desplazar(event):
+            """Desplaza verticalmente el formulario con la rueda del mouse."""
             canvas_entradas.yview_scroll(
                 int(-event.delta / 120), "units"
             )
@@ -214,6 +228,7 @@ class VistaMetodosNumericos:
 
         self.mostrar_inicio()
         self.construir_vista_posicional()
+        self.construir_vista_graficador()
 
         # Programa 7: vista de Errores Numéricos
         self.errores_numericos = VistaErroresNumericos(self)
@@ -224,7 +239,9 @@ class VistaMetodosNumericos:
 
 
     def agregar_campo(self, padre, etiqueta, variable):
-        """Agrega una entrada con su respectiva etiqueta."""
+        """Crea una etiqueta y su campo de entrada asociado.
+        Devuelve el control para utilizarlo desde la interfaz.
+        """
 
         ttk.Label(
             padre,
@@ -241,7 +258,7 @@ class VistaMetodosNumericos:
         return entrada
 
     def construir_entradas(self, padre):
-        """Construye los campos de configuración del método."""
+        """Construye los campos y botones del Método de Bisección."""
 
         self.agregar_campo(
             padre, "Función f(x)", self.funcion
@@ -285,13 +302,6 @@ class VistaMetodosNumericos:
 
         ttk.Button(
             padre,
-            text="Graficar función",
-            style="Accent.TButton",
-            command=self.graficar_funcion
-        ).pack(fill="x", pady=(12, 6))
-
-        ttk.Button(
-            padre,
             text="Graficar última raíz",
             style="Op.TButton",
             command=self.graficar_raiz
@@ -299,13 +309,13 @@ class VistaMetodosNumericos:
 
 
     def limpiar_panel(self):
-        """Elimina los resultados anteriores."""
+        """Elimina los controles del panel de resultados de Bisección."""
 
         for widget in self.panel_resultado.winfo_children():
             widget.destroy()
 
     def mostrar_inicio(self):
-        """Muestra las instrucciones antes de calcular."""
+        """Muestra las instrucciones iniciales del Método de Bisección."""
 
         self.limpiar_panel()
 
@@ -335,7 +345,9 @@ class VistaMetodosNumericos:
         ).pack(anchor="w")
 
     def calcular(self):
-        """Obtiene los datos y ejecuta el algoritmo."""
+        """Recoge los parámetros y ejecuta el Método de Bisección.
+        Muestra los resultados o informa de datos inválidos.
+        """
 
         try:
             resultado = metodo_biseccion(
@@ -359,7 +371,9 @@ class VistaMetodosNumericos:
 
     @staticmethod
     def formato(numero):
-        """Formatea resultados para facilitar su lectura."""
+        """Presenta los valores numéricos con un formato legible.
+        Representa los valores ausentes mediante un guion.
+        """
 
         if numero is None:
             return "—"
@@ -367,7 +381,9 @@ class VistaMetodosNumericos:
         return f"{numero:.10g}"
 
     def mostrar_resultado(self, datos):
-        """Muestra el resultado final y la tabla de iteraciones."""
+        """Muestra la raíz aproximada y el resumen del cálculo.
+        Construye la tabla desplazable con las iteraciones.
+        """
 
         self.limpiar_panel()
 
@@ -466,12 +482,39 @@ class VistaMetodosNumericos:
                 text=encabezados[columna]
             )
 
+            # Anchos adaptados al contenido de cada columna
+            anchos = {
+                "k": 40,
+                "a": 85,
+                "b": 85,
+                "xr": 100,
+                "fa": 100,
+                "fb": 100,
+                "fr": 110,
+                "eb": 95,
+                "er": 115
+            }
+
             tabla.column(
                 columna,
-                width=105 if columna != "k" else 45,
-                minwidth=45,
+                width=anchos[columna],
+                minwidth=50 if columna != "k" else 35,
                 anchor="center",
-                stretch=False
+                stretch=True
+            )
+
+        if not datos["tabla"]:
+            tabla.insert(
+                "",
+                "end",
+                values=(
+                    "—", "—", "—",
+                    self.formato(datos["raiz"]),
+                    "—", "—",
+                    self.formato(datos["valor_funcion"]),
+                    self.formato(datos["error"]),
+                    "—"
+                )
             )
 
         for paso in datos["tabla"]:
@@ -535,7 +578,7 @@ class VistaMetodosNumericos:
         ).pack(anchor="w", pady=(8, 0))
 
     def limpiar(self):
-        """Borra todos los datos ingresados y los resultados anteriores."""
+        """Vacía los campos de Bisección y borra el resultado guardado."""
 
         # Vaciar los campos del formulario
         self.funcion.set("")
@@ -552,7 +595,9 @@ class VistaMetodosNumericos:
 
 
     def graficar_funcion(self):
-        """Grafica la función dentro de la calculadora."""
+        """Grafica la función ingresada usando sus límites actuales.
+        Informa si la función o el intervalo no son válidos.
+        """
 
         try:
             figura, datos = crear_grafica(
@@ -575,7 +620,9 @@ class VistaMetodosNumericos:
             )
 
     def graficar_raiz(self):
-        """Grafica la última raíz calculada por Bisección."""
+        """Dibuja la última raíz obtenida mediante Bisección.
+        Utiliza la función y el intervalo del cálculo guardado.
+        """
 
         if self.ultimo_resultado is None:
             messagebox.showwarning(
@@ -620,7 +667,9 @@ class VistaMetodosNumericos:
             )
 
     def mostrar_grafica(self, figura, datos, titulo):
-        """Incrusta la gráfica de Matplotlib en la vista Tkinter."""
+        """Inserta una figura de Matplotlib en el panel de resultados.
+        Muestra también la función y los puntos válidos.
+        """
 
         self.limpiar_panel()
 
@@ -676,7 +725,9 @@ class VistaMetodosNumericos:
         ).pack(fill="x", pady=(12, 0))
 
     def volver_resultados(self):
-        """Regresa a los resultados anteriores de Bisección."""
+        """Recupera el último resultado de Bisección, si existe.
+        En caso contrario, muestra las instrucciones iniciales.
+        """
 
         if self.ultimo_resultado is not None:
             self.mostrar_resultado(self.ultimo_resultado)
@@ -684,19 +735,31 @@ class VistaMetodosNumericos:
             self.mostrar_inicio()
 
     def cambiar_modulo(self, nombre):
-        """Muestra la funcionalidad seleccionada."""
+        """Muestra la pantalla del módulo seleccionado.
+        Resalta su botón y deja los demás con estilo normal.
+        """
 
-        if nombre == "biseccion":
-            self.vista_biseccion.tkraise()
+        vistas = {
+            "biseccion": self.vista_biseccion,
+            "graficador": self.vista_graficador,
+            "posicional": self.vista_posicional,
+            "errores": self.vista_errores
+        }
 
-        elif nombre == "posicional":
-            self.vista_posicional.tkraise()
+        # Mostrar la pantalla seleccionada
+        vistas[nombre].tkraise()
 
-        elif nombre == "errores":
-            self.vista_errores.tkraise()
+        # Resaltar únicamente el botón activo
+        for clave, boton in self.botones_modulos.items():
+            if clave == nombre:
+                boton.configure(style="Accent.TButton")
+            else:
+                boton.configure(style="Op.TButton")
 
     def construir_vista_posicional(self):
-        """Construye la interfaz de Notación Posicional."""
+        """Crea el formulario y los resultados de Notación Posicional.
+        Permite seleccionar base 10 o base 2.
+        """
 
         self.vista_posicional.columnconfigure(0, weight=1)
         self.vista_posicional.columnconfigure(1, weight=2)
@@ -801,13 +864,13 @@ class VistaMetodosNumericos:
         self.mostrar_inicio_posicional()
 
     def limpiar_panel_posicional(self):
-        """Elimina los controles anteriores del panel."""
+        """Elimina el contenido anterior de Notación Posicional."""
 
         for widget in self.panel_posicional.winfo_children():
             widget.destroy()
 
     def mostrar_inicio_posicional(self):
-        """Presenta las instrucciones iniciales."""
+        """Muestra las indicaciones para convertir entre bases."""
 
         self.limpiar_panel_posicional()
 
@@ -838,7 +901,9 @@ class VistaMetodosNumericos:
         ).pack(anchor="w")
 
     def convertir_posicional(self):
-        """Valida el número y calcula la conversión."""
+        """Valida el número y calcula su conversión de base.
+        Muestra el procedimiento o un mensaje de error.
+        """
 
         numero = self.numero_posicional.get().strip()
         base = int(self.base_posicional.get())
@@ -872,7 +937,9 @@ class VistaMetodosNumericos:
         )
 
     def mostrar_resultado_posicional(self, datos, procedimiento):
-        """Presenta la conversión y su desarrollo paso a paso."""
+        """Muestra la equivalencia decimal-binaria y el procedimiento.
+        Presenta los pasos en un área de texto desplazable.
+        """
 
         self.limpiar_panel_posicional()
 
@@ -968,9 +1035,172 @@ class VistaMetodosNumericos:
         texto.configure(state="disabled")
 
     def limpiar_posicional(self):
-        """Borra el número y limpia los resultados."""
+        """Borra el número, restablece la base y limpia resultados."""
 
         self.numero_posicional.set("")
         self.base_posicional.set("10")
         self.mostrar_inicio_posicional()
         self.entrada_posicional.focus_set()
+
+
+
+
+    def construir_vista_graficador(self):
+        """Crea los campos, botones y panel del Graficador.
+        Mantiene esta pantalla separada del Método de Bisección.
+        """
+
+        self.vista_graficador.columnconfigure(0, weight=1)
+        self.vista_graficador.columnconfigure(1, weight=2)
+        self.vista_graficador.rowconfigure(0, weight=1)
+
+        izquierda = Tarjeta(
+            self.vista_graficador,
+            "Graficador de Funciones",
+            "Ingrese una función y el intervalo que desea visualizar."
+        )
+        izquierda.grid(
+            row=0, column=0, sticky="nsew", padx=(0, 8)
+        )
+
+        derecha = Tarjeta(
+            self.vista_graficador,
+            "Representación gráfica",
+            "Visualización de funciones y restricciones de dominio."
+        )
+        derecha.grid(
+            row=0, column=1, sticky="nsew", padx=(8, 0)
+        )
+
+        self.agregar_campo(
+            izquierda, "Función f(x)", self.funcion_grafica
+        )
+
+        ttk.Label(
+            izquierda,
+            text="Ejemplo: sin(x), sqrt(x), log(x), 1/x",
+            style="CardSubtitle.TLabel",
+            wraplength=320
+        ).pack(anchor="w", pady=(5, 12))
+
+        self.agregar_campo(
+            izquierda, "Límite inferior (x_min)",
+            self.x_min_grafica
+        )
+
+        self.agregar_campo(
+            izquierda, "Límite superior (x_max)",
+            self.x_max_grafica
+        )
+
+        ttk.Button(
+            izquierda,
+            text="Graficar función",
+            style="Accent.TButton",
+            command=self.graficar_independiente
+        ).pack(fill="x", pady=(22, 6))
+
+        ttk.Button(
+            izquierda,
+            text="Limpiar",
+            style="Coral.TButton",
+            command=self.limpiar_graficador
+        ).pack(fill="x")
+
+        self.panel_graficador = ttk.Frame(
+            derecha, style="Card.TFrame"
+        )
+        self.panel_graficador.pack(
+            fill="both", expand=True, pady=(12, 0)
+        )
+
+        self.limpiar_graficador()
+
+    def graficar_independiente(self):
+        """Obtiene los datos de la función y genera su gráfica.
+        La incrusta en la pantalla independiente del Graficador.
+        """
+
+        try:
+            figura, datos = crear_grafica(
+                self.funcion_grafica.get(),
+                self.x_min_grafica.get(),
+                self.x_max_grafica.get()
+            )
+
+        except (ValueError, TypeError, OverflowError) as error:
+            messagebox.showerror(
+                "Error al graficar",
+                str(error),
+                parent=self.app.root
+            )
+            return
+
+        for widget in self.panel_graficador.winfo_children():
+            widget.destroy()
+
+        ttk.Label(
+            self.panel_graficador,
+            text=f"Función: {datos['funcion']}",
+            style="SectionTitle.TLabel"
+        ).pack(anchor="w", pady=(5, 8))
+
+        contenedor = ttk.Frame(
+            self.panel_graficador, style="Card.TFrame"
+        )
+        contenedor.pack(fill="both", expand=True)
+
+        canvas = FigureCanvasTkAgg(
+            figura, master=contenedor
+        )
+        canvas.draw()
+        canvas.get_tk_widget().pack(
+            fill="both", expand=True
+        )
+
+        self.canvas_graficador = canvas
+
+        ttk.Label(
+            self.panel_graficador,
+            text=(
+                f"Intervalo: [{datos['x_min']}, {datos['x_max']}]"
+                f"  |  Puntos válidos: "
+                f"{datos['puntos_validos']} de "
+                f"{datos['puntos_totales']}"
+            ),
+            style="CardSubtitle.TLabel",
+            wraplength=500
+        ).pack(anchor="w", pady=(8, 0))
+
+    def limpiar_graficador(self):
+        """Vacía los campos del Graficador y elimina la figura anterior."""
+
+        self.funcion_grafica.set("")
+        self.x_min_grafica.set("")
+        self.x_max_grafica.set("")
+
+        if not hasattr(self, "panel_graficador"):
+            return
+
+        for widget in self.panel_graficador.winfo_children():
+            widget.destroy()
+
+        ttk.Label(
+            self.panel_graficador,
+            text="Aquí aparecerá la gráfica de la función.",
+            style="SectionTitle.TLabel"
+        ).pack(anchor="w", pady=(20, 8))
+
+        ttk.Label(
+            self.panel_graficador,
+            text=(
+                "Ingrese una función y establezca sus límites. "
+                "Puede graficar funciones polinomiales, "
+                "racionales, trigonométricas, radicales "
+                "y logarítmicas."
+            ),
+            style="AnalysisBody.TLabel",
+            wraplength=480,
+            justify="left"
+        ).pack(anchor="w")
+
