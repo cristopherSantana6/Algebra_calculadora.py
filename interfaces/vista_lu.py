@@ -126,8 +126,36 @@ class VistaLU:
 
         ttk.Label(self.marco_entradas, text=f"Matriz aumentada [ A | b ]   (A es {filas}×{columnas})",
                   style="SectionTitle.TLabel").pack(anchor="w", pady=(0, 6))
-        rejilla = ttk.Frame(self.marco_entradas, style="Card.TFrame")
-        rejilla.pack(anchor="w")
+        if filas > 5 or columnas > 5:
+            area = ttk.Frame(self.marco_entradas, style="Card.TFrame")
+            area.pack(fill="both", expand=True)
+            canvas = tk.Canvas(
+                area, width=620, height=min(340, filas * 43 + 20),
+                bg=self.app.WHITE, highlightthickness=0, bd=0,
+            )
+            barra_x = ttk.Scrollbar(area, orient="horizontal", command=canvas.xview)
+            barra_y = ttk.Scrollbar(area, orient="vertical", command=canvas.yview)
+            canvas.configure(xscrollcommand=barra_x.set, yscrollcommand=barra_y.set)
+            rejilla = ttk.Frame(canvas, style="Card.TFrame")
+            ventana = canvas.create_window((0, 0), window=rejilla, anchor="nw")
+            rejilla.bind(
+                "<Configure>",
+                lambda _event, c=canvas: c.configure(scrollregion=c.bbox("all")),
+            )
+            canvas.grid(row=0, column=0, sticky="nsew")
+            barra_y.grid(row=0, column=1, sticky="ns")
+            barra_x.grid(row=1, column=0, sticky="ew")
+            area.rowconfigure(0, weight=1)
+            area.columnconfigure(0, weight=1)
+            canvas.bind(
+                "<Configure>",
+                lambda event, c=canvas, w=ventana: c.itemconfigure(
+                    w, height=max(event.height, rejilla.winfo_reqheight())
+                ),
+            )
+        else:
+            rejilla = ttk.Frame(self.marco_entradas, style="Card.TFrame")
+            rejilla.pack(anchor="w")
         self.entradas = []
         for i in range(filas):
             fila = []
@@ -269,66 +297,8 @@ class VistaLU:
                 style="SectionTitle.TLabel",
             ).pack(anchor="w", pady=(0, 5))
 
-            cantidad_columnas = max(
-                (len(fila) for fila in matriz),
-                default=0,
-            )
-
-            # En matrices pequeñas se usa todo el ancho disponible.
-            # Las matrices anchas reciben una barra horizontal propia.
-            if cantidad_columnas <= 5:
-                tabla = crear_matriz_visual(
-                    bloque,
-                    matriz,
-                    cell_width=58,
-                    pad=3,
-                )
-                tabla.pack(anchor="center", pady=(0, 4))
-            else:
-                area = ttk.Frame(bloque, style="Card.TFrame")
-                area.pack(fill="x", expand=True)
-
-                canvas = tk.Canvas(
-                    area,
-                    height=max(110, min(420, len(matriz) * 58 + 24)),
-                    bg=self.app.WHITE,
-                    highlightthickness=0,
-                    bd=0,
-                )
-                barra = ttk.Scrollbar(
-                    area,
-                    orient="horizontal",
-                    command=canvas.xview,
-                )
-                canvas.configure(xscrollcommand=barra.set)
-
-                interior = ttk.Frame(canvas, style="Card.TFrame")
-                ventana = canvas.create_window(
-                    (0, 0),
-                    window=interior,
-                    anchor="nw",
-                )
-
-                tabla = crear_matriz_visual(
-                    interior,
-                    matriz,
-                    cell_width=56,
-                    pad=3,
-                )
-                tabla.pack(anchor="w", pady=(2, 4))
-
-                def actualizar_region(_event=None, c=canvas):
-                    c.configure(scrollregion=c.bbox("all"))
-
-                interior.bind("<Configure>", actualizar_region)
-                canvas.bind(
-                    "<Configure>",
-                    lambda event, c=canvas, w=ventana:
-                        c.itemconfigure(w, height=event.height),
-                )
-
-                canvas.pack(fill="x", expand=True)
-                barra.pack(fill="x", pady=(2, 0))
+            tabla = crear_matriz_visual(bloque, matriz, pad=3)
+            tabla.pack(anchor="center", pady=(0, 4), fill="both", expand=True)
 
     def _mostrar_pasos_reduccion(self, interior, titulo, pasos, numero_variables):
         """Muestra una sección con cada paso de una reducción sobre una matriz aumentada."""

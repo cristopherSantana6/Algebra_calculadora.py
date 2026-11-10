@@ -68,7 +68,7 @@ Proyecto integrador de Álgebra Lineal (MTM0120), construido sobre la interfaz d
 - Aritmética exacta con `Fraction`.
 
 ### Restricciones
-El programa utiliza únicamente Python estándar y Tkinter/ttk. No utiliza NumPy, SciPy ni funciones avanzadas de `math`.
+Los módulos del Programa 1 y el renderizador de matrices utilizan Python estándar y Tkinter/ttk; los algoritmos del Programa 1 no dependen de NumPy ni SciPy. Los módulos de gráficos y métodos numéricos usan Matplotlib, NumPy y SymPy, enumerados en `requirements.txt`.
 
 ### Estructura
 
@@ -113,7 +113,7 @@ También se pueden ejecutar las pruebas desde la terminal de PyCharm:
 python -m pruebas.casos_prueba
 ```
 
-Las pruebas cubren Ax=b, operaciones vectoriales, combinación lineal, dependencia lineal (forma reducida, pivotes, variables libres y relación no trivial), clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversa por adjunta y por Gauss-Jordan, determinante por cofactores, por reducción de filas y por Sarrus, regla de Cramer, dimensiones incompatibles y fracciones exactas.
+Las pruebas funcionales cubren Ax=b, operaciones vectoriales, combinación lineal, dependencia lineal, matrices, inversas, determinantes, Cramer, LU y fracciones exactas. `python -m pruebas.casos_visualizacion` estresa la geometría y los cálculos con matrices de 2×2, 3×3, 5×5, 8×8 y 10×10.
 
 
 ### Funciones añadidas para el I Corte
@@ -205,13 +205,13 @@ Funciones agregadas después de la documentación del Programa 5. Todas usan ún
 - `modulos/modulo_gauss.py` aloja la eliminación gaussiana; `algoritmos/matrices.py` y `algoritmos/eliminacion_gaussiana.py` solo reexportan nombres.
 
 
-## Corrección de visualización del módulo LU
+## Renderizado adaptable de matrices
 
-Las matrices L y U se muestran ahora en bloques verticales, cada una
-utilizando el ancho del panel de resultados. Para matrices de más de cinco
-columnas se habilita desplazamiento horizontal local, evitando que las
-últimas columnas queden ocultas. La secuencia de pasos de LU utiliza el
-mismo componente de presentación.
+El componente compartido `interfaces/ventana_matriz.py` mide cada columna según
+el valor más ancho, apila numeradores y denominadores, dimensiona las filas por su
+contenido y dibuja corchetes que cubren la matriz completa. Cada matriz tiene
+desplazamiento horizontal y vertical propio; LU y los demás módulos usan este
+mismo componente para resultados y pasos intermedios.
 
 
 ### Verificación manual de L · U = A

@@ -66,8 +66,9 @@ Mejoras de uso en este módulo:
 
 ## Requisitos
 
-- Python 3 con Tkinter (incluido en la instalación estándar de Python).
-- Sin dependencias externas.
+- Python 3 con Tkinter.
+- Matplotlib, NumPy y SymPy para los módulos de métodos numéricos, gráficos y análisis de errores (`pip install -r requirements.txt`).
+- Los algoritmos de álgebra lineal del Programa 1 siguen usando `Fraction` y listas de Python; no dependen de NumPy ni SciPy.
 
 ## Ejecución
 
@@ -81,9 +82,10 @@ También se puede abrir la carpeta en PyCharm, abrir `main.py` y pulsar ▶ Run.
 
 ```bash
 python -m pruebas.casos_prueba
+python -m pruebas.casos_visualizacion
 ```
 
-Cubren la factorización LU y Ax = b con L y U, el verificador de 26 propiedades, el encadenamiento sin recálculo, Ax = b, operaciones vectoriales, combinación lineal, dependencia lineal, clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversas (adjunta y Gauss-Jordan), determinantes (cofactores, reducción y Sarrus), regla de Cramer, dimensiones incompatibles y fracciones exactas.
+Las pruebas funcionales cubren la factorización LU y Ax = b, el verificador de 26 propiedades, sistemas, operaciones vectoriales y matriciales, inversas, determinantes, Cramer, dimensiones y fracciones exactas. Las pruebas de visualización verifican dimensiones de celdas, fracciones largas y matrices de 2×2, 3×3, 5×5, 8×8 y 10×10 en Tkinter.
 
 ## Estructura
 

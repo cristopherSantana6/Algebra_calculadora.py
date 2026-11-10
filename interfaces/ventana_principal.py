@@ -45,6 +45,7 @@ from algoritmos.vectores import (
 )
 from interfaces.componentes.tarjeta import Tarjeta
 from interfaces.vista_lu import VistaLU
+from interfaces.vista_metodos_numericos import VistaMetodosNumericos
 from interfaces.ventana_proceso import VentanaProceso
 from interfaces.ventana_matriz import crear_matriz_visual, crear_vector_visual
 from algoritmos.expresiones import (
@@ -697,11 +698,13 @@ class CalculadoraAlgebraLineal:
         self.construir_vista_propiedades()
         self.lu = VistaLU(self)
         self.vista_lu = self.lu.marco
+        self.metodos_numericos = VistaMetodosNumericos(self)
+        self.vista_metodos_numericos = self.metodos_numericos.marco
         self.mostrar_vista("entrada")
 
         ttk.Label(
             self.area,
-            text="Programa 6 • Álgebra Lineal (MTM0120) • Grupo 4",
+            text="Programa 7 • Álgebra Lineal (MTM0120) • Grupo 4",
             style="Footer.TLabel",
         ).pack(fill="x", padx=24, pady=(0, 8))
 
@@ -779,13 +782,23 @@ class CalculadoraAlgebraLineal:
         self.boton_lu.pack(fill="x", pady=3)
         self.botones_sidebar["lu"] = self.boton_lu
 
+        self.boton_metodos = ttk.Button(
+            self.sidebar,
+            text="∑   Métodos Numéricos",
+            style="Sidebar.TButton",
+            command=lambda: self.mostrar_vista("metodos_numericos")
+        )
+
+        self.boton_metodos.pack(fill="x", pady=3)
+        self.botones_sidebar["metodos_numericos"] = self.boton_metodos
+
         self.boton_resultados = ttk.Button(self.sidebar, text="✓   Análisis de Resultados", style="Sidebar.TButton", command=lambda: self.mostrar_vista("resultados"))
         self.boton_resultados.pack(fill="x", pady=3)
         self.botones_sidebar["resultados"] = self.boton_resultados
 
         ttk.Separator(self.sidebar).pack(fill="x", pady=22)
 
-        ttk.Label(self.sidebar, text="PROGRAMA 6", style="Sidebar.TLabel", font=("Segoe UI", 8, "bold")).pack(anchor="w")
+        ttk.Label(self.sidebar, text="PROGRAMA 7", style="Sidebar.TLabel", font=("Segoe UI", 8, "bold")).pack(anchor="w")
         ttk.Label(self.sidebar, text="Álgebra Vectorial y Matricial", style="Sidebar.TLabel").pack(anchor="w", pady=(4, 14))
 
         ttk.Button(self.sidebar, text="?   Información del grupo", style="Sidebar.TButton", command=self.mostrar_info).pack(fill="x", pady=3)
@@ -799,7 +812,7 @@ class CalculadoraAlgebraLineal:
         header.pack(fill="x")
 
         ttk.Label(header, text="Estudio de Álgebra Lineal", style="Header.TLabel").pack(anchor="w")
-        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 6  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
+        ttk.Label(header, text="Operaciones Vectoriales y Matriciales  •  Programa 7  •  Grupo 4", style="HeaderSub.TLabel").pack(anchor="w", pady=(2, 0))
 
     def nueva_vista(self):
         """Prepara una vista nueva para mostrar su contenido."""
@@ -3407,6 +3420,7 @@ class CalculadoraAlgebraLineal:
             "matriz_vector": self.vista_matriz_vector,
             "propiedades": self.vista_propiedades,
             "lu": self.vista_lu,
+            "metodos_numericos": self.vista_metodos_numericos,
         }
         for vista in vistas.values():
             vista.lower()
@@ -3804,7 +3818,7 @@ class CalculadoraAlgebraLineal:
     def mostrar_info(self):
         messagebox.showinfo(
             "Grupo 4",
-            "Programa 6 - Calculadora de Álgebra Lineal\n\n"
+            "Programa 7 - Calculadora de Álgebra Lineal\n\n"
             "Rafael Antonio Arauz Navarro\n"
             "Patricia del Carmen Oquist Talavera\n"
             "Cristopher Rafael Santana Ríos\n"
