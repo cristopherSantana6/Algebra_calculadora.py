@@ -39,6 +39,12 @@ Mejoras de uso en este módulo:
 - Al cambiar las dimensiones, las casillas se regeneran **conservando lo ya escrito**.
 - La operación activa queda resaltada y solo se leen las matrices que esa operación usa.
 
+### Métodos numéricos: Jacobi y Gauss-Seidel
+- Resolución de sistemas cuadrados Ax = b mediante Jacobi o Gauss-Seidel.
+- Formulario visual para la matriz A, el vector b, la aproximación inicial, la tolerancia y el límite de iteraciones.
+- Historial de aproximaciones, error máximo entre iteraciones y residuo ||Ax-b||∞.
+- Diagnóstico de dominancia diagonal estricta como condición suficiente de convergencia; no se declara divergencia solo por no cumplirla.
+
 ### Matriz por vector y propiedades
 - Producto A·v, verificación de A(u+v) = Au + Av y A·v como combinación lineal de las columnas de A.
 - Módulo de propiedades algebraicas con selector que conserva las matrices y vectores cargados:
@@ -83,6 +89,7 @@ También se puede abrir la carpeta en PyCharm, abrir `main.py` y pulsar ▶ Run.
 ```bash
 python -m pruebas.casos_prueba
 python -m pruebas.casos_visualizacion
+python -m unittest pruebas.test_metodos_iterativos
 ```
 
 Las pruebas funcionales cubren la factorización LU y Ax = b, el verificador de 26 propiedades, sistemas, operaciones vectoriales y matriciales, inversas, determinantes, Cramer, dimensiones y fracciones exactas. Las pruebas de visualización verifican dimensiones de celdas, fracciones largas y matrices de 2×2, 3×3, 5×5, 8×8 y 10×10 en Tkinter.
@@ -104,6 +111,7 @@ Algebra_calculadora.py/
 │   ├── ventana_matriz.py
 │   ├── ventana_principal.py
 │   ├── vista_lu.py               # vista de la factorización LU
+│   └── vista_iterativos.py       # interfaz de Jacobi y Gauss-Seidel
 │   └── ventana_proceso.py
 ├── modulos/
 │   ├── modulo_gauss.py           # Gauss, Gauss-Jordan y clasificación de sistemas
@@ -118,7 +126,8 @@ Algebra_calculadora.py/
 │   ├── formato.py
 │   └── fracciones.py
 └── pruebas/
-    └── casos_prueba.py
+    ├── casos_prueba.py
+    └── test_metodos_iterativos.py
 ```
 
 ## Historial de entregas
