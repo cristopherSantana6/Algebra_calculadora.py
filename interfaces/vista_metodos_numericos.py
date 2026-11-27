@@ -15,6 +15,7 @@ from algoritmos.notacion_posicional import (
 )
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from interfaces.vista_errores_numericos import VistaErroresNumericos
+from interfaces.vista_iterativos import VistaIterativos
 
 
 class VistaMetodosNumericos:
@@ -65,7 +66,7 @@ class VistaMetodosNumericos:
 
         ttk.Label(
             encabezado,
-            text="Programa 7 | Bisección, Graficador, Notación Posicional y Errores Numéricos",
+            text="Programa 7 | Bisección, Jacobi, Gauss-Seidel, Graficador y Errores Numéricos",
             style="PageSubtitle.TLabel"
         ).pack(anchor="w")
 
@@ -82,6 +83,7 @@ class VistaMetodosNumericos:
             ("biseccion", "Método de Bisección"),
             ("graficador", "Graficador"),
             ("posicional", "Notación Posicional"),
+            ("iterativos", "Jacobi / Gauss-Seidel"),
             ("errores", "Errores Numéricos")
         ]
 
@@ -233,6 +235,10 @@ class VistaMetodosNumericos:
         # Programa 7: vista de Errores Numéricos
         self.errores_numericos = VistaErroresNumericos(self)
         self.vista_errores = self.errores_numericos.marco
+
+        # Métodos iterativos de solución de sistemas Ax=b.
+        self.iterativos = VistaIterativos(self)
+        self.vista_iterativos = self.iterativos.marco
 
         self.cambiar_modulo("biseccion")
 
@@ -743,6 +749,7 @@ class VistaMetodosNumericos:
             "biseccion": self.vista_biseccion,
             "graficador": self.vista_graficador,
             "posicional": self.vista_posicional,
+            "iterativos": self.vista_iterativos,
             "errores": self.vista_errores
         }
 
