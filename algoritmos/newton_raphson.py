@@ -36,8 +36,10 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
 
     actual, filas = inicial, []
     residuo = abs(evaluar(f, actual))
-    estado = "Convergencia alcanzada desde el valor inicial." if residuo <= tol else "Se alcanzó el máximo de iteraciones."
-    if residuo > tol:
+    convergio = residuo <= tol
+    estado = ("Convergencia alcanzada desde el valor inicial." if convergio else
+              f"No se alcanzó el criterio de convergencia: se llegó al máximo de iteraciones ({limite}).")
+    if not convergio:
         for i in range(1, limite + 1):
             fx, dfx = evaluar(f, actual), evaluar(df, actual)
             if abs(dfx) <= 1e-12:
@@ -57,6 +59,7 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
                           "tipo": tipo_error, "residuo": residuo})
             actual = siguiente
             if error <= tol and residuo <= tol:
+                convergio = True
                 estado = "Convergencia alcanzada."
                 break
     return {
@@ -70,6 +73,7 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
         "tipo_error": filas[-1]["tipo"] if filas else "No calculado",
         "residuo": abs(evaluar(f, actual)),
         "estado": estado,
+        "convergio": convergio,
         "historial": filas,
         "tolerancia": tol,
     }
@@ -102,7 +106,12 @@ def graficar_newton_raphson(resultado, ax=None):
         xx = np.linspace(fila["xi"], fila["xnext"], 30)
         ax.plot(xx, fila["fx"] + fila["dfx"] * (xx - fila["xi"]), "--", alpha=0.5)
         ax.scatter([fila["xi"]], [fila["fx"]], s=18)
-    ax.scatter([resultado["aproximacion"]], [0], color="red", zorder=4, label="Raíz aproximada")
+    # Solo se rotula como raíz aproximada si el método convergió.
+    if resultado["convergio"]:
+        ax.scatter([resultado["aproximacion"]], [0], color="red", zorder=4, label="Raíz aproximada")
+    else:
+        ax.scatter([resultado["aproximacion"]], [0], color="gray", marker="x", zorder=4,
+                   label="Última aproximación (sin convergencia)")
     ax.set_title("Método de Newton-Raphson")
     ax.set_xlabel("x")
     ax.set_ylabel("f(x)")

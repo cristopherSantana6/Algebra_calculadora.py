@@ -213,9 +213,7 @@ class VistaNewtonRaphson:
 
     def _mostrar_resumen(self, datos):
         self._limpiar_pestana(self.pestana_resumen)
-        estado_ok = datos["residuo"] <= datos["tolerancia"] and (
-            "Convergencia alcanzada" in datos["estado"]
-        )
+        estado_ok = datos["convergio"]
         ttk.Label(
             self.pestana_resumen,
             text=datos["estado"],
@@ -227,7 +225,8 @@ class VistaNewtonRaphson:
         informacion = [
             ("Función", str(datos["funcion"])),
             ("Derivada", str(datos["derivada"])),
-            ("Raíz aproximada", self._fmt(datos["aproximacion"])),
+            ("Raíz aproximada" if estado_ok else "Última aproximación (no es raíz)",
+             self._fmt(datos["aproximacion"])),
             ("Iteraciones realizadas", str(datos["iteraciones"])),
             ("Máximo de iteraciones", str(datos["max_iteraciones"])),
             ("Error aproximado", (

@@ -7,6 +7,7 @@ class NewtonRaphsonTests(unittest.TestCase):
         resultado = resolver_newton_raphson("x**2 - 2", 1.5, 1e-8, 50)
         self.assertAlmostEqual(resultado["aproximacion"], 2 ** 0.5, places=7)
         self.assertLessEqual(resultado["residuo"], 1e-8)
+        self.assertTrue(resultado["convergio"])
 
     def test_convergencia_desde_raiz(self):
         resultado = resolver_newton_raphson("x**2 - 4", 2)
@@ -16,13 +17,16 @@ class NewtonRaphsonTests(unittest.TestCase):
     def test_derivada_cero(self):
         resultado = resolver_newton_raphson("x**2 + 1", 0)
         self.assertIn("derivada es cero", resultado["estado"])
+        self.assertFalse(resultado["convergio"])
 
 
     def test_maximo_de_iteraciones_sin_convergencia(self):
         resultado = resolver_newton_raphson(
             "x**2 - 2", 1.5, 1e-30, 1
         )
+        self.assertIn("No se alcanzó el criterio de convergencia", resultado["estado"])
         self.assertIn("máximo de iteraciones", resultado["estado"])
+        self.assertFalse(resultado["convergio"])
         self.assertEqual(resultado["iteraciones"], 1)
         self.assertEqual(resultado["max_iteraciones"], 1)
         self.assertIsNotNone(resultado["error"])
