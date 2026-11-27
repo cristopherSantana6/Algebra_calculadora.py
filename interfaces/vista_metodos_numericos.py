@@ -16,6 +16,7 @@ from algoritmos.notacion_posicional import (
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from interfaces.vista_errores_numericos import VistaErroresNumericos
 from interfaces.vista_iterativos import VistaIterativos
+from interfaces.componentes.desplazable import MarcoDesplazable
 from interfaces.vista_newton_raphson import VistaNewtonRaphson
 
 
@@ -101,23 +102,21 @@ class VistaMetodosNumericos:
 
             self.botones_modulos[nombre] = boton
 
-        # Pantalla para Bisección y Graficador
-        self.vista_biseccion = ttk.Frame(self.marco)
-        self.vista_biseccion.grid(
-            row=1, column=0, sticky="nsew"
-        )
+        # Cada módulo va dentro de un contenedor con barra de desplazamiento
+        # vertical, por si su contenido no cabe en la pantalla.
+        self.contenedor_biseccion = MarcoDesplazable(self.marco, self.app)
+        self.contenedor_biseccion.grid(row=1, column=0, sticky="nsew")
+        self.vista_biseccion = self.contenedor_biseccion.interior
 
         # Pantalla independiente de Notación Posicional
-        self.vista_posicional = ttk.Frame(self.marco)
-        self.vista_posicional.grid(
-            row=1, column=0, sticky="nsew"
-        )
+        self.contenedor_posicional = MarcoDesplazable(self.marco, self.app)
+        self.contenedor_posicional.grid(row=1, column=0, sticky="nsew")
+        self.vista_posicional = self.contenedor_posicional.interior
 
         # Vista independiente para el Graficador
-        self.vista_graficador = ttk.Frame(self.marco)
-        self.vista_graficador.grid(
-            row=1, column=0, sticky="nsew"
-        )
+        self.contenedor_graficador = MarcoDesplazable(self.marco, self.app)
+        self.contenedor_graficador.grid(row=1, column=0, sticky="nsew")
+        self.vista_graficador = self.contenedor_graficador.interior
 
         # Conservamos el nombre cuerpo para no alterar
         # los componentes que ya funcionan.
@@ -236,15 +235,15 @@ class VistaMetodosNumericos:
 
         # Programa 7: vista de Errores Numéricos
         self.errores_numericos = VistaErroresNumericos(self)
-        self.vista_errores = self.errores_numericos.marco
+        self.vista_errores = self.errores_numericos.contenedor
 
         # Métodos iterativos de solución de sistemas Ax=b.
         self.iterativos = VistaIterativos(self)
-        self.vista_iterativos = self.iterativos.marco
+        self.vista_iterativos = self.iterativos.contenedor
 
         # Programa 9: método abierto de búsqueda de raíces.
         self.newton_raphson = VistaNewtonRaphson(self)
-        self.vista_newton = self.newton_raphson.marco
+        self.vista_newton = self.newton_raphson.contenedor
 
         self.cambiar_modulo("biseccion")
 
@@ -752,9 +751,9 @@ class VistaMetodosNumericos:
         """
 
         vistas = {
-            "biseccion": self.vista_biseccion,
-            "graficador": self.vista_graficador,
-            "posicional": self.vista_posicional,
+            "biseccion": self.contenedor_biseccion,
+            "graficador": self.contenedor_graficador,
+            "posicional": self.contenedor_posicional,
             "iterativos": self.vista_iterativos,
             "newton": self.vista_newton,
             "errores": self.vista_errores

@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from interfaces.componentes.tarjeta import Tarjeta
+from interfaces.componentes.desplazable import MarcoDesplazable
 from algoritmos.metodos_iterativos import resolver_iterativos
 
 
@@ -24,8 +25,10 @@ class VistaIterativos:
     def __init__(self, padre):
         self.padre = padre
         self.app = padre.app
-        self.marco = ttk.Frame(padre.marco)
-        self.marco.grid(row=1, column=0, sticky="nsew")
+        # Contenedor con barra de desplazamiento vertical.
+        self.contenedor = MarcoDesplazable(padre.marco, padre.app)
+        self.contenedor.grid(row=1, column=0, sticky="nsew")
+        self.marco = self.contenedor.interior
 
         self.dimension = tk.IntVar(master=self.app.root, value=3)
         self.metodo = tk.StringVar(master=self.app.root, value="Jacobi")

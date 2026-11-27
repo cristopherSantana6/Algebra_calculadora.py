@@ -388,6 +388,12 @@ class CalculadoraAlgebraLineal:
                 widget.configure(bg=self.SURFACE_ALT, fg=self.DARK, insertbackground=self.DARK)
             except tk.TclError:
                 pass
+        # Fondo de los contenedores desplazables de Métodos Numéricos.
+        for canvas in getattr(self, "canvas_desplazables", []):
+            try:
+                canvas.configure(bg=self.BACKGROUND)
+            except tk.TclError:
+                pass
         self.marcar_sidebar_activa(self.vista_actual)
         self.guardar_tema(nombre, None if nombre in self.TEMAS and nombre != "Personalizado" else paleta)
 

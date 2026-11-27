@@ -11,6 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 from interfaces.componentes.tarjeta import Tarjeta
+from interfaces.componentes.desplazable import MarcoDesplazable
 from algoritmos.errores_numericos import (
     calcular_errores,
     calcular_propagacion,
@@ -58,8 +59,10 @@ class VistaErroresNumericos:
         Prepara los controles y crea la interfaz."""
         self.padre = padre  # instancia de VistaMetodosNumericos
         self.app = padre.app
-        self.marco = ttk.Frame(padre.marco)
-        self.marco.grid(row=1, column=0, sticky="nsew")
+        # Contenedor con barra de desplazamiento vertical.
+        self.contenedor = MarcoDesplazable(padre.marco, padre.app)
+        self.contenedor.grid(row=1, column=0, sticky="nsew")
+        self.marco = self.contenedor.interior
         self.modo = tk.StringVar(value=self.OPCIONES[0])
         self.campos = {}
         self.canvas_grafica = None

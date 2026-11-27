@@ -10,6 +10,7 @@ from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from interfaces.componentes.tarjeta import Tarjeta
+from interfaces.componentes.desplazable import MarcoDesplazable
 from algoritmos.newton_raphson import (
     resolver_newton_raphson,
     graficar_newton_raphson,
@@ -22,8 +23,10 @@ class VistaNewtonRaphson:
     def __init__(self, padre):
         self.padre = padre
         self.app = padre.app
-        self.marco = ttk.Frame(padre.marco)
-        self.marco.grid(row=1, column=0, sticky="nsew")
+        # Contenedor con barra de desplazamiento vertical.
+        self.contenedor = MarcoDesplazable(padre.marco, padre.app)
+        self.contenedor.grid(row=1, column=0, sticky="nsew")
+        self.marco = self.contenedor.interior
 
         self.funcion = tk.StringVar(master=self.app.root, value="x**2 - 2")
         self.x0 = tk.StringVar(master=self.app.root, value="1.5")
