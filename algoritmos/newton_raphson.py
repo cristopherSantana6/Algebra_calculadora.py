@@ -59,9 +59,19 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
             if error <= tol and residuo <= tol:
                 estado = "Convergencia alcanzada."
                 break
-    return {"funcion": f_expr, "derivada": df_expr, "x": x, "aproximacion": actual,
-            "iteraciones": len(filas), "residuo": abs(evaluar(f, actual)),
-            "estado": estado, "historial": filas, "tolerancia": tol}
+    return {
+        "funcion": f_expr,
+        "derivada": df_expr,
+        "x": x,
+        "aproximacion": actual,
+        "iteraciones": len(filas),
+        "error": filas[-1]["error"] if filas else None,
+        "tipo_error": filas[-1]["tipo"] if filas else "No calculado",
+        "residuo": abs(evaluar(f, actual)),
+        "estado": estado,
+        "historial": filas,
+        "tolerancia": tol,
+    }
 
 
 def graficar_newton_raphson(resultado, ax=None):
