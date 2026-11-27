@@ -230,6 +230,10 @@ class VistaNewtonRaphson:
             ("Derivada", str(datos["derivada"])),
             ("Raíz aproximada", self._fmt(datos["aproximacion"])),
             ("Iteraciones realizadas", str(datos["iteraciones"])),
+            ("Error aproximado", (
+                f'{self._fmt(datos["error"])} ({datos["tipo_error"]})'
+                if datos["error"] is not None else "No calculado"
+            )),
             ("Residuo |f(x)|", self._fmt(datos["residuo"])),
             ("Tolerancia", self._fmt(datos["tolerancia"])),
         ]
