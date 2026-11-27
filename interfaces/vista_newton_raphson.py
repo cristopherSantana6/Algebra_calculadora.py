@@ -264,8 +264,10 @@ class VistaNewtonRaphson:
         ).pack(anchor="w", pady=(0, 8))
 
         columnas = ("i", "xi", "fx", "dfx", "xnext", "error", "tipo", "residuo")
+        contenedor = ttk.Frame(self.pestana_tabla, style="Card.TFrame")
+        contenedor.pack(fill="both", expand=True)
         tabla = ttk.Treeview(
-            self.pestana_tabla, columns=columnas,
+            contenedor, columns=columnas,
             show="headings", height=13
         )
         encabezados = {
@@ -295,13 +297,11 @@ class VistaNewtonRaphson:
                 )
             )
 
-        contenedor = ttk.Frame(self.pestana_tabla, style="Card.TFrame")
-        contenedor.pack(fill="both", expand=True)
-        tabla.pack(in_=contenedor, side="top", fill="both", expand=True)
         barra_x = ttk.Scrollbar(
             self.pestana_tabla, orient="horizontal", command=tabla.xview
         )
         tabla.configure(xscrollcommand=barra_x.set)
+        tabla.pack(side="top", fill="both", expand=True)
         barra_x.pack(fill="x")
         ttk.Label(
             self.pestana_tabla,
