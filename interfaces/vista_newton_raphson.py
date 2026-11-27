@@ -60,7 +60,7 @@ class VistaNewtonRaphson:
         ).pack(fill="x")
         ttk.Label(
             izquierda,
-            text="Ejemplos: x**2 - 2, x**3 - x - 2, cos(x) - x",
+            text="Ejemplos: x^3 - 2x - 5, x**2 - 2, cos(x) - x. Se acepta 2x en lugar de 2*x.",
             style="CardSubtitle.TLabel",
             wraplength=300,
             justify="left"
@@ -192,6 +192,9 @@ class VistaNewtonRaphson:
                 self.max_iteraciones.get().strip()
             )
         except (ValueError, TypeError, OverflowError) as error:
+            # Se borra el resultado anterior para no confundirlo con la nueva función.
+            self.ultimo_resultado = None
+            self._mostrar_inicio()
             messagebox.showerror(
                 "No se pudo calcular",
                 str(error),

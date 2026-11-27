@@ -1,6 +1,13 @@
 """Implementación del método de Newton-Raphson para una función real f(x)."""
 import math
 import sympy as sp
+from sympy.parsing.sympy_parser import (
+    parse_expr, standard_transformations,
+    implicit_multiplication_application, convert_xor,
+)
+
+# Permite escribir 2x, 3x^2 o 2(x+1) sin el signo * (multiplicación implícita y ^ como potencia).
+TRANSFORMACIONES = standard_transformations + (implicit_multiplication_application, convert_xor)
 
 
 def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100):
@@ -19,7 +26,7 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
                   "exp": sp.exp, "log": sp.log, "ln": sp.log, "sqrt": sp.sqrt,
                   "pi": sp.pi, "E": sp.E, "abs": sp.Abs}
     try:
-        f_expr = sp.sympify(str(expresion).replace("^", "**"), locals=permitidos)
+        f_expr = parse_expr(str(expresion), local_dict=permitidos, transformations=TRANSFORMACIONES)
         if not isinstance(f_expr, sp.Expr) or (f_expr.free_symbols - {x}):
             raise ValueError
         # Derivada analítica f'(x) obtenida con SymPy.
@@ -27,7 +34,8 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
         # Se convierten f y f' en funciones numéricas para evaluarlas rápido.
         f, df = sp.lambdify(x, f_expr, modules=["math"]), sp.lambdify(x, df_expr, modules=["math"])
     except Exception:
-        raise ValueError("No se pudo interpretar f(x). Use una expresión válida en x.") from None
+        raise ValueError("No se pudo interpretar f(x). Revise paréntesis y operadores; "
+                         "la única variable permitida es x (ejemplo: x^3 - 2x - 5).") from None
 
     # Evalúa una función y garantiza que el resultado sea un número finito.
     def evaluar(funcion, valor):

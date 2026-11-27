@@ -40,6 +40,17 @@ class NewtonRaphsonTests(unittest.TestCase):
         self.assertIn("residuo", paso)
         self.assertIn("xnext", paso)
 
+    def test_multiplicacion_implicita(self):
+        con_asterisco = resolver_newton_raphson("x**3-2*x-5", 2, 1e-3, 100)
+        for texto in ("x**3-2x-5", "x^3 - 2x - 5"):
+            resultado = resolver_newton_raphson(texto, 2, 1e-3, 100)
+            self.assertTrue(resultado["convergio"])
+            self.assertAlmostEqual(resultado["aproximacion"], con_asterisco["aproximacion"])
+
+    def test_expresion_invalida_informa_error(self):
+        with self.assertRaises(ValueError):
+            resolver_newton_raphson("x**3 - 2y", 2)
+
 
 if __name__ == "__main__":
     unittest.main()
