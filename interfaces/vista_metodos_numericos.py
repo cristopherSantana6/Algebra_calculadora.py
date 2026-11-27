@@ -16,6 +16,7 @@ from algoritmos.notacion_posicional import (
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from interfaces.vista_errores_numericos import VistaErroresNumericos
 from interfaces.vista_iterativos import VistaIterativos
+from interfaces.vista_newton_raphson import VistaNewtonRaphson
 
 
 class VistaMetodosNumericos:
@@ -84,6 +85,7 @@ class VistaMetodosNumericos:
             ("graficador", "Graficador"),
             ("posicional", "Notación Posicional"),
             ("iterativos", "Jacobi / Gauss-Seidel"),
+            ("newton", "Newton-Raphson"),
             ("errores", "Errores Numéricos")
         ]
 
@@ -239,6 +241,10 @@ class VistaMetodosNumericos:
         # Métodos iterativos de solución de sistemas Ax=b.
         self.iterativos = VistaIterativos(self)
         self.vista_iterativos = self.iterativos.marco
+
+        # Programa 9: método abierto de búsqueda de raíces.
+        self.newton_raphson = VistaNewtonRaphson(self)
+        self.vista_newton = self.newton_raphson.marco
 
         self.cambiar_modulo("biseccion")
 
@@ -750,6 +756,7 @@ class VistaMetodosNumericos:
             "graficador": self.vista_graficador,
             "posicional": self.vista_posicional,
             "iterativos": self.vista_iterativos,
+            "newton": self.vista_newton,
             "errores": self.vista_errores
         }
 
