@@ -58,6 +58,14 @@ Mejoras de uso en este módulo:
   8. A(cu) = c(Au)
   9. A·B = B·A — contraejemplo: el producto de matrices no es conmutativo.
 
+### Newton-Raphson (Programa 9)
+- Vista integrada en «Métodos Numéricos» para introducir f(x), x₀, tolerancia y máximo de iteraciones.
+- Derivada simbólica mediante SymPy y cálculo iterativo propio; no utiliza `scipy.optimize.newton`.
+- Resumen de la raíz aproximada, número de iteraciones, estado y residuo |f(x)|.
+- Tabla por iteración con xᵢ, f(xᵢ), f′(xᵢ), xᵢ₊₁ y error aproximado.
+- Gráfica de la función, eje horizontal, aproximaciones y rectas tangentes.
+- Pruebas para convergencia, derivada nula/cercana a cero y límite de iteraciones.
+
 ### Factorización LU y solución de Ax = b (Programa 6)
 - **Factorización A = L·U** (`modulos/modulo_lu.py`) solo con reemplazos de fila: L (m×m, unos en la diagonal) guarda cada multiplicador y U es la forma escalonada (m×n). Si hace falta intercambiar filas se detiene con «La matriz no admite Factorización LU sin permutación (requiere pivoteo parcial PA = LU)».
 - Verifica **L·U == A** con el producto de matrices de la Calculadora y, para A cuadrada, resuelve **Ly = b** (adelante) y **Ux = y** (atrás) reduciendo [L|b] y [U|y]; termina con **A·x == b**.
@@ -136,6 +144,7 @@ Algebra_calculadora.py/
 - **Programa 4** – Vectores, dependencia lineal, A·v, propiedades algebraicas y operaciones matriciales.
 - **Programa 5** – Documentación del código (encabezados de módulo y *docstrings*) sin cambiar la lógica.
 - **Programa 6** – Factorización LU y Ax = b por doble sustitución, verificador ampliado a 26 propiedades y encadenamiento de resultados.
+- **Programa 9** – Método abierto de Newton-Raphson con derivada simbólica, historial, control de convergencia y gráfica de tangentes.
 - **Posteriores** – Traspuestas, inversa (adjunta y Gauss-Jordan), determinantes (cofactores, reducción y Sarrus), regla de Cramer, constructor visual de expresiones con memoria R1–R7, la propiedad 9 y el módulo de matrices rediseñado con botones.
 
 Más detalle de cada entrega en [`README_local.md`](README_local.md).
