@@ -68,6 +68,25 @@ class PruebasMetodosIterativos(unittest.TestCase):
         self.assertFalse(resultado["convergio"])
         self.assertEqual(resultado["iteraciones"], 1)
 
+    def test_despeje_jacobi_usa_iteracion_anterior(self):
+        despejes = resolver_jacobi(MATRIZ, VECTOR, [0, 0, 0])["despejes"]
+        self.assertEqual(len(despejes), 3)
+        self.assertEqual(despejes[0]["formula"], "x₁⁽ᵏ⁺¹⁾ = (6 + x₂⁽ᵏ⁾ − 2x₃⁽ᵏ⁾) / 10")
+        self.assertEqual(despejes[0]["simplificada"], "x₁⁽ᵏ⁺¹⁾ = 0.6 + 0.1x₂⁽ᵏ⁾ − 0.2x₃⁽ᵏ⁾")
+        self.assertNotIn("x₁⁽ᵏ⁺¹⁾ +", despejes[1]["formula"])
+
+    def test_despeje_gauss_seidel_usa_valores_nuevos(self):
+        despejes = resolver_gauss_seidel(MATRIZ, VECTOR, [0, 0, 0])["despejes"]
+        self.assertEqual(despejes[2]["formula"], "x₃⁽ᵏ⁺¹⁾ = (−10 − 2x₁⁽ᵏ⁺¹⁾ + x₂⁽ᵏ⁺¹⁾) / 10")
+
+    def test_primera_sustitucion_coincide_con_historial(self):
+        for resolver in (resolver_jacobi, resolver_gauss_seidel):
+            resultado = resolver(MATRIZ, VECTOR, [0, 0, 0])
+            primera = resultado["historial"][1]["aproximacion"]
+            for despeje, valor in zip(resultado["despejes"], primera):
+                obtenido = despeje["primera_iteracion"].rsplit("= ", 1)[1].replace("−", "-")
+                self.assertAlmostEqual(float(obtenido), valor, places=5)
+
 
 if __name__ == "__main__":
     unittest.main()

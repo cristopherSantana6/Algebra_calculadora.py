@@ -330,7 +330,22 @@ class VistaIterativos:
             wraplength=560
         ).pack(fill="x", pady=(0, 10))
 
-        resumen = ttk.Frame(self.panel_resultado, style="Card.TFrame")
+        # Pestañas: resumen, despeje de cada incógnita e historial.
+        notebook = ttk.Notebook(self.panel_resultado)
+        notebook.pack(fill="both", expand=True)
+        pestana_resumen = ttk.Frame(notebook, style="Card.TFrame", padding=10)
+        pestana_despeje = ttk.Frame(notebook, style="Card.TFrame", padding=10)
+        pestana_tabla = ttk.Frame(notebook, style="Card.TFrame", padding=10)
+        notebook.add(pestana_resumen, text="Resumen")
+        notebook.add(pestana_despeje, text="Despeje")
+        notebook.add(pestana_tabla, text="Iteraciones")
+
+        self._mostrar_resumen(pestana_resumen, datos)
+        self._mostrar_despeje(pestana_despeje, datos)
+        self._mostrar_tabla(pestana_tabla, datos)
+
+    def _mostrar_resumen(self, pestana, datos):
+        resumen = ttk.Frame(pestana, style="Card.TFrame")
         resumen.pack(fill="x", pady=(0, 10))
         columnas = (
             ("Aproximación final", "[" + ", ".join(
@@ -352,25 +367,70 @@ class VistaIterativos:
             ).pack(side="right")
 
         ttk.Label(
-            self.panel_resultado,
+            pestana,
             text="Diagnóstico de convergencia",
             style="SectionTitle.TLabel"
         ).pack(anchor="w", pady=(6, 4))
         ttk.Label(
-            self.panel_resultado,
+            pestana,
             text=datos["diagnostico"],
             style="AnalysisBody.TLabel",
             wraplength=560,
             justify="left"
         ).pack(anchor="w", pady=(0, 8))
 
+    def _mostrar_despeje(self, pestana, datos):
+        """Muestra cada ecuación despejada para su incógnita de la diagonal."""
+        if datos["metodo"] == "Jacobi":
+            explicacion = (
+                "De la ecuación i se despeja xᵢ: xᵢ = (bᵢ − Σ aᵢⱼ·xⱼ) / aᵢᵢ. "
+                "En Jacobi todas las xⱼ del lado derecho son de la iteración anterior (k)."
+            )
+        else:
+            explicacion = (
+                "De la ecuación i se despeja xᵢ: xᵢ = (bᵢ − Σ aᵢⱼ·xⱼ) / aᵢᵢ. "
+                "En Gauss-Seidel las xⱼ ya calculadas en esta iteración (j < i) "
+                "se usan con su valor nuevo (k+1)."
+            )
         ttk.Label(
-            self.panel_resultado,
-            text="Historial de iteraciones",
-            style="SectionTitle.TLabel"
-        ).pack(anchor="w", pady=(4, 6))
+            pestana, text=explicacion, style="AnalysisBody.TLabel",
+            wraplength=560, justify="left"
+        ).pack(anchor="w", pady=(0, 10))
 
-        contenedor = ttk.Frame(self.panel_resultado, style="Card.TFrame")
+        # Las fórmulas van en un cuadro de texto de solo lectura para poder
+        # desplazarse cuando el sistema tiene muchas incógnitas.
+        secciones = (
+            ("Ecuaciones despejadas", "formula"),
+            ("Forma simplificada (coeficientes divididos entre aᵢᵢ)", "simplificada"),
+            ("Sustitución en la primera iteración (desde x⁽⁰⁾)", "primera_iteracion"),
+        )
+        lineas = []
+        for titulo, clave in secciones:
+            lineas.append(titulo)
+            lineas.extend("   " + d[clave] for d in datos["despejes"])
+            lineas.append("")
+
+        contenedor = ttk.Frame(pestana, style="Card.TFrame")
+        contenedor.pack(fill="both", expand=True)
+        texto = tk.Text(
+            contenedor, wrap="none", height=9, font=("Consolas", 11),
+            bg=self.app.SURFACE_ALT, fg=self.app.DARK,
+            relief="flat", borderwidth=0, padx=10, pady=8
+        )
+        barra_y = ttk.Scrollbar(contenedor, orient="vertical", command=texto.yview)
+        barra_x = ttk.Scrollbar(pestana, orient="horizontal", command=texto.xview)
+        texto.configure(yscrollcommand=barra_y.set, xscrollcommand=barra_x.set)
+        texto.tag_configure("titulo", font=("Consolas", 11, "bold"))
+        for linea in lineas[:-1]:
+            etiqueta = () if linea.startswith("   ") or not linea else ("titulo",)
+            texto.insert("end", linea + "\n", etiqueta)
+        texto.configure(state="disabled")
+        texto.pack(side="left", fill="both", expand=True)
+        barra_y.pack(side="right", fill="y")
+        barra_x.pack(fill="x")
+
+    def _mostrar_tabla(self, pestana, datos):
+        contenedor = ttk.Frame(pestana, style="Card.TFrame")
         contenedor.pack(fill="both", expand=True)
 
         columnas_tabla = ("k", "aproximacion", "error", "residuo")
@@ -414,7 +474,7 @@ class VistaIterativos:
         barra.pack(side="right", fill="y")
 
         ttk.Label(
-            self.panel_resultado,
+            pestana,
             text=(
                 "El error máximo mide el cambio entre dos aproximaciones consecutivas. "
                 "El residuo mide cuánto se aleja la aproximación de satisfacer Ax = b."

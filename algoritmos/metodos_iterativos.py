@@ -84,6 +84,88 @@ def _dominancia_diagonal(A):
     )
 
 
+_SUBINDICES = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+
+def _num_texto(valor):
+    """Muestra enteros sin decimales y el resto con 6 cifras significativas."""
+    if abs(valor - round(valor)) < 1e-12:
+        texto = str(int(round(valor)))
+    else:
+        texto = f"{valor:.6g}"
+    return texto.replace("-", "−")
+
+
+def _divisor(valor):
+    """Encierra en paréntesis un divisor negativo: / (−5)."""
+    return f"({_num_texto(valor)})" if valor < 0 else _num_texto(valor)
+
+
+def _combinacion(constante, terminos):
+    """Arma 'c ± a·x ± ...' omitiendo ceros y coeficientes iguales a 1."""
+    partes = []
+    if constante != 0 or not terminos:
+        partes.append(_num_texto(constante))
+    for coef, variable in terminos:
+        if coef == 0:
+            continue
+        signo = "−" if coef < 0 else "+"
+        magnitud = "" if abs(coef) == 1 else _num_texto(abs(coef))
+        if partes:
+            partes.append(f"{signo} {magnitud}{variable}")
+        else:
+            partes.append(f"{'−' if coef < 0 else ''}{magnitud}{variable}")
+    return " ".join(partes) if partes else "0"
+
+
+def generar_despejes(A, b, metodo="jacobi", x0=None):
+    """
+    Despeja la incógnita i de la ecuación i:
+        xᵢ = (bᵢ − Σ aᵢⱼ·xⱼ) / aᵢᵢ   (j ≠ i)
+    En Jacobi todas las xⱼ usan la iteración k; en Gauss-Seidel las
+    xⱼ con j < i ya usan la iteración k+1. Si se da x0, también muestra
+    la sustitución numérica de la primera iteración.
+    """
+    gauss_seidel = metodo == "gauss-seidel"
+    n = len(A)
+    nuevo = list(x0) if x0 is not None else None
+    despejes = []
+    for i in range(n):
+        xi = "x" + str(i + 1).translate(_SUBINDICES)
+
+        # Variable de cada término: iteración nueva o anterior según el método.
+        def var(j):
+            iteracion = "⁽ᵏ⁺¹⁾" if gauss_seidel and j < i else "⁽ᵏ⁾"
+            return "x" + str(j + 1).translate(_SUBINDICES) + iteracion
+
+        otros = [j for j in range(n) if j != i]
+        # Forma con el divisor: (bᵢ − Σ aᵢⱼ·xⱼ) / aᵢᵢ
+        numerador = _combinacion(b[i], [(-A[i][j], var(j)) for j in otros])
+        formula = f"{xi}⁽ᵏ⁺¹⁾ = ({numerador}) / {_divisor(A[i][i])}"
+        # Forma simplificada: cada coeficiente ya dividido entre aᵢᵢ.
+        simplificada = f"{xi}⁽ᵏ⁺¹⁾ = " + _combinacion(
+            b[i] / A[i][i], [(-A[i][j] / A[i][i], var(j)) for j in otros]
+        )
+        despeje = {"incognita": xi, "formula": formula, "simplificada": simplificada}
+
+        # Sustitución de la primera iteración (k = 0).
+        if nuevo is not None:
+            valores = [nuevo[j] if (gauss_seidel and j < i) else x0[j] for j in range(n)]
+            suma = sum(A[i][j] * valores[j] for j in otros)
+            resultado = (b[i] - suma) / A[i][i]
+            sustitucion = " ".join(
+                f"{'−' if A[i][j] > 0 else '+'} {_num_texto(abs(A[i][j]))}·({_num_texto(valores[j])})"
+                for j in otros if A[i][j] != 0
+            )
+            despeje["primera_iteracion"] = (
+                f"{xi}⁽¹⁾ = ({_num_texto(b[i])} {sustitucion}) / {_divisor(A[i][i])}"
+                f" = {_num_texto(resultado)}"
+            )
+            nuevo[i] = resultado
+        despejes.append(despeje)
+    return despejes
+
+
 def resolver_iterativos(
     matriz,
     vector,
@@ -124,6 +206,7 @@ def resolver_iterativos(
 
     n = len(A)
     dominante = _dominancia_diagonal(A)
+    despejes = generar_despejes(A, b, clave, anterior)
     historial = [{
         "iteracion": 0,
         "aproximacion": anterior.copy(),
@@ -205,6 +288,7 @@ def resolver_iterativos(
         "residuo": _residuo_infinito(A, b, anterior),
         "dominancia_diagonal": dominante,
         "diagnostico": diagnostico,
+        "despejes": despejes,
         "historial": historial,
     }
 
