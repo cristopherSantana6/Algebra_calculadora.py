@@ -18,5 +18,22 @@ class NewtonRaphsonTests(unittest.TestCase):
         self.assertIn("derivada es cero", resultado["estado"])
 
 
+    def test_maximo_de_iteraciones_sin_convergencia(self):
+        resultado = resolver_newton_raphson(
+            "x**2 - 2", 1.5, 1e-30, 1
+        )
+        self.assertIn("máximo de iteraciones", resultado["estado"])
+        self.assertEqual(resultado["iteraciones"], 1)
+        self.assertGreater(resultado["residuo"], 1e-30)
+
+    def test_registra_derivada_y_residuo_en_historial(self):
+        resultado = resolver_newton_raphson("x**2 - 2", 1.5, 1e-8, 50)
+        self.assertTrue(resultado["historial"])
+        paso = resultado["historial"][0]
+        self.assertIn("dfx", paso)
+        self.assertIn("residuo", paso)
+        self.assertIn("xnext", paso)
+
+
 if __name__ == "__main__":
     unittest.main()
