@@ -39,6 +39,12 @@ Mejoras de uso en este módulo:
 - Al cambiar las dimensiones, las casillas se regeneran **conservando lo ya escrito**.
 - La operación activa queda resaltada y solo se leen las matrices que esa operación usa.
 
+### Métodos numéricos: Jacobi y Gauss-Seidel
+- Resolución de sistemas cuadrados Ax = b mediante Jacobi o Gauss-Seidel.
+- Formulario visual para la matriz A, el vector b, la aproximación inicial, la tolerancia y el límite de iteraciones.
+- Historial de aproximaciones, error máximo entre iteraciones y residuo ||Ax-b||∞.
+- Diagnóstico de dominancia diagonal estricta como condición suficiente de convergencia; no se declara divergencia solo por no cumplirla.
+
 ### Matriz por vector y propiedades
 - Producto A·v, verificación de A(u+v) = Au + Av y A·v como combinación lineal de las columnas de A.
 - Módulo de propiedades algebraicas con selector que conserva las matrices y vectores cargados:
@@ -51,6 +57,14 @@ Mejoras de uso en este módulo:
   7. A(u + v) = Au + Av
   8. A(cu) = c(Au)
   9. A·B = B·A — contraejemplo: el producto de matrices no es conmutativo.
+
+### Newton-Raphson (Programa 9)
+- Vista integrada en «Métodos Numéricos» para introducir f(x), x₀, tolerancia y máximo de iteraciones.
+- Derivada simbólica mediante SymPy y cálculo iterativo propio; no utiliza `scipy.optimize.newton`.
+- Resumen de la raíz aproximada, número de iteraciones, estado y residuo |f(x)|.
+- Tabla por iteración con xᵢ, f(xᵢ), f′(xᵢ), xᵢ₊₁ y error aproximado.
+- Gráfica de la función, eje horizontal, aproximaciones y rectas tangentes.
+- Pruebas para convergencia, derivada nula/cercana a cero y límite de iteraciones.
 
 ### Factorización LU y solución de Ax = b (Programa 6)
 - **Factorización A = L·U** (`modulos/modulo_lu.py`) solo con reemplazos de fila: L (m×m, unos en la diagonal) guarda cada multiplicador y U es la forma escalonada (m×n). Si hace falta intercambiar filas se detiene con «La matriz no admite Factorización LU sin permutación (requiere pivoteo parcial PA = LU)».
@@ -66,8 +80,9 @@ Mejoras de uso en este módulo:
 
 ## Requisitos
 
-- Python 3 con Tkinter (incluido en la instalación estándar de Python).
-- Sin dependencias externas.
+- Python 3 con Tkinter.
+- Matplotlib, NumPy y SymPy para los módulos de métodos numéricos, gráficos y análisis de errores (`pip install -r requirements.txt`).
+- Los algoritmos de álgebra lineal del Programa 1 siguen usando `Fraction` y listas de Python; no dependen de NumPy ni SciPy.
 
 ## Ejecución
 
@@ -81,9 +96,11 @@ También se puede abrir la carpeta en PyCharm, abrir `main.py` y pulsar ▶ Run.
 
 ```bash
 python -m pruebas.casos_prueba
+python -m pruebas.casos_visualizacion
+python -m unittest pruebas.test_metodos_iterativos
 ```
 
-Cubren la factorización LU y Ax = b con L y U, el verificador de 26 propiedades, el encadenamiento sin recálculo, Ax = b, operaciones vectoriales, combinación lineal, dependencia lineal, clasificación homogéneo/heterogéneo, operaciones matriciales, traspuesta, inversas (adjunta y Gauss-Jordan), determinantes (cofactores, reducción y Sarrus), regla de Cramer, dimensiones incompatibles y fracciones exactas.
+Las pruebas funcionales cubren la factorización LU y Ax = b, el verificador de 26 propiedades, sistemas, operaciones vectoriales y matriciales, inversas, determinantes, Cramer, dimensiones y fracciones exactas. Las pruebas de visualización verifican dimensiones de celdas, fracciones largas y matrices de 2×2, 3×3, 5×5, 8×8 y 10×10 en Tkinter.
 
 ## Estructura
 
@@ -102,6 +119,7 @@ Algebra_calculadora.py/
 │   ├── ventana_matriz.py
 │   ├── ventana_principal.py
 │   ├── vista_lu.py               # vista de la factorización LU
+│   └── vista_iterativos.py       # interfaz de Jacobi y Gauss-Seidel
 │   └── ventana_proceso.py
 ├── modulos/
 │   ├── modulo_gauss.py           # Gauss, Gauss-Jordan y clasificación de sistemas
@@ -116,7 +134,8 @@ Algebra_calculadora.py/
 │   ├── formato.py
 │   └── fracciones.py
 └── pruebas/
-    └── casos_prueba.py
+    ├── casos_prueba.py
+    └── test_metodos_iterativos.py
 ```
 
 ## Historial de entregas
@@ -125,6 +144,7 @@ Algebra_calculadora.py/
 - **Programa 4** – Vectores, dependencia lineal, A·v, propiedades algebraicas y operaciones matriciales.
 - **Programa 5** – Documentación del código (encabezados de módulo y *docstrings*) sin cambiar la lógica.
 - **Programa 6** – Factorización LU y Ax = b por doble sustitución, verificador ampliado a 26 propiedades y encadenamiento de resultados.
+- **Programa 9** – Método abierto de Newton-Raphson con derivada simbólica, historial, control de convergencia y gráfica de tangentes.
 - **Posteriores** – Traspuestas, inversa (adjunta y Gauss-Jordan), determinantes (cofactores, reducción y Sarrus), regla de Cramer, constructor visual de expresiones con memoria R1–R7, la propiedad 9 y el módulo de matrices rediseñado con botones.
 
 Más detalle de cada entrega en [`README_local.md`](README_local.md).
