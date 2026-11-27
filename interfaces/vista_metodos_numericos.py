@@ -67,7 +67,7 @@ class VistaMetodosNumericos:
 
         ttk.Label(
             encabezado,
-            text="Programa 7 | Bisección, Jacobi, Gauss-Seidel, Graficador, Notación Posicional y Errores",
+            text="Métodos Numéricos | Programa 7 y Programa 9: Bisección, Newton-Raphson, Jacobi y Gauss-Seidel",
             style="PageSubtitle.TLabel"
         ).pack(anchor="w")
 
