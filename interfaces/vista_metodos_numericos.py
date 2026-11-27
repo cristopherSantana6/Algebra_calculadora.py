@@ -1,6 +1,6 @@
 """
-Integra los algoritmos con la interfaz gráfica Tkinter.
-Primera funcionalidad: Método de Bisección.
+Integra los algoritmos de métodos numéricos con la interfaz gráfica Tkinter.
+Incluye Bisección, Jacobi, Gauss-Seidel, Graficador, Notación Posicional y Errores Numéricos.
 """
 
 import tkinter as tk
@@ -22,7 +22,7 @@ class VistaMetodosNumericos:
     """Vista de Métodos Numéricos integrada a la calculadora."""
 
     def __init__(self, app):
-        """Inicializa las variables de las cuatro funcionalidades.
+        """Inicializa las variables y las vistas de los módulos numéricos.
         Crea el contenedor de la vista y construye su interfaz.
         """
         self.app = app
@@ -66,7 +66,7 @@ class VistaMetodosNumericos:
 
         ttk.Label(
             encabezado,
-            text="Programa 7 | Bisección, Jacobi, Gauss-Seidel, Graficador y Errores Numéricos",
+            text="Programa 7 | Bisección, Jacobi, Gauss-Seidel, Graficador, Notación Posicional y Errores",
             style="PageSubtitle.TLabel"
         ).pack(anchor="w")
 
