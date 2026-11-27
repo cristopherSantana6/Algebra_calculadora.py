@@ -7,7 +7,6 @@ muestra el historial de cálculo y la gráfica con las tangentes.
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-import sympy as sp
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from interfaces.componentes.tarjeta import Tarjeta
@@ -230,6 +229,7 @@ class VistaNewtonRaphson:
             ("Derivada", str(datos["derivada"])),
             ("Raíz aproximada", self._fmt(datos["aproximacion"])),
             ("Iteraciones realizadas", str(datos["iteraciones"])),
+            ("Máximo de iteraciones", str(datos["max_iteraciones"])),
             ("Error aproximado", (
                 f'{self._fmt(datos["error"])} ({datos["tipo_error"]})'
                 if datos["error"] is not None else "No calculado"
