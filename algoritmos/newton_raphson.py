@@ -65,6 +65,7 @@ def resolver_newton_raphson(expresion, x0, tolerancia=1e-6, max_iteraciones=100)
         "x": x,
         "aproximacion": actual,
         "iteraciones": len(filas),
+        "max_iteraciones": limite,
         "error": filas[-1]["error"] if filas else None,
         "tipo_error": filas[-1]["tipo"] if filas else "No calculado",
         "residuo": abs(evaluar(f, actual)),
