@@ -301,11 +301,18 @@ class VistaNewtonRaphson:
                 )
             )
 
+        barra_y = ttk.Scrollbar(
+            contenedor, orient="vertical", command=tabla.yview
+        )
         barra_x = ttk.Scrollbar(
             self.pestana_tabla, orient="horizontal", command=tabla.xview
         )
-        tabla.configure(xscrollcommand=barra_x.set)
-        tabla.pack(side="top", fill="both", expand=True)
+        tabla.configure(
+            yscrollcommand=barra_y.set,
+            xscrollcommand=barra_x.set
+        )
+        tabla.pack(side="left", fill="both", expand=True)
+        barra_y.pack(side="right", fill="y")
         barra_x.pack(fill="x")
         ttk.Label(
             self.pestana_tabla,
