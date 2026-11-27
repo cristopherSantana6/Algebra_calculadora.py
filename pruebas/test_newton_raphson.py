@@ -24,6 +24,8 @@ class NewtonRaphsonTests(unittest.TestCase):
         )
         self.assertIn("máximo de iteraciones", resultado["estado"])
         self.assertEqual(resultado["iteraciones"], 1)
+        self.assertEqual(resultado["max_iteraciones"], 1)
+        self.assertIsNotNone(resultado["error"])
         self.assertGreater(resultado["residuo"], 1e-30)
 
     def test_registra_derivada_y_residuo_en_historial(self):
